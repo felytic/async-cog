@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "async-cog"
+version = "0.1.0"
+description = "Async library for Cloud-Optimised GeoTIFF"
+authors = ["Serhii Hulko <3834080+felytic@users.noreply.github.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+flake8 = "^4.0.1"
+black = "^21.10b0"
+isort = "^5.10.1"
+pre-commit = "^2.15.0"
+pytest-cov = "^3.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 79
