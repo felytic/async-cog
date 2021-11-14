@@ -9,12 +9,16 @@ license = "MIT"
 python = "^3.8"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.5"
-flake8 = "^4.0.1"
 black = "^21.10b0"
+flake8 = "^4.0.1"
 isort = "^5.10.1"
+mypy = "^0.910"
 pre-commit = "^2.15.0"
+pytest = "^6.2.5"
 pytest-cov = "^3.0.0"
+vulture = "^2.3"
+yamlfix = "^0.7.2"
+yamllint = "^1.26.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -22,3 +26,11 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 79
+
+[tool.vulture]
+exclude = ["*venv/*"]
+paths = ["."]
+sort_by_size = true
+
+[tool.mypy]
+ignore_missing_imports = true
