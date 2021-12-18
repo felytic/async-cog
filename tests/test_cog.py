@@ -17,7 +17,7 @@ def test_constructor() -> None:
 
 def response_read(url: str, **kwargs: Any) -> CallbackResult:
     path = (Path.cwd() / Path(__file__).parent).resolve()
-    with open(path / "mock_data" / "cog.tif", "rb") as file:
+    with open(path / "mock_data" / str(url), "rb") as file:
         range_header = kwargs["headers"]["Range"]
         offset, data_length = map(int, range_header.split("bytes=")[1].split("-"))
         file.seek(offset)
@@ -27,10 +27,43 @@ def response_read(url: str, **kwargs: Any) -> CallbackResult:
 
 @pytest.mark.asyncio
 async def test_read_header() -> None:
-    url = "http://cog.test/cog.tiff"
+    url = "cog.tif"
 
     with aioresponses() as mocked_response:
         mocked_response.get(url, callback=response_read, repeat=True)
 
         async with COGReader(url) as reader:
             assert not reader.is_bigtiff
+
+
+@pytest.mark.asyncio
+async def test_read_bigtiff_header() -> None:
+    url = "BigTIFF.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            assert reader.is_bigtiff
+
+
+@pytest.mark.asyncio
+async def test_read_big_endian_header() -> None:
+    url = "be_cog.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            assert reader._byte_order == "big"
+
+
+@pytest.mark.asyncio
+async def test_read_invalid_header() -> None:
+    url = "invalid_cog.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        with pytest.raises(ValueError, match="Invalid file format"):
+            await COGReader(url).__aenter__()
