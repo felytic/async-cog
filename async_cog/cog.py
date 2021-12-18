@@ -1,4 +1,6 @@
-from typing import Literal
+from __future__ import annotations
+
+from typing import Any, Literal
 
 from aiohttp import ClientSession
 
@@ -6,11 +8,11 @@ from aiohttp import ClientSession
 class COGReader:
     def __init__(self, url: str):
         self._url: str = url
-        self._version: Literal[42, 43]
+        self._version: int
         self._byte_order: Literal["little", "big"]
         self._offset_size: Literal[4, 8]
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> COGReader:
         self._client = ClientSession()
         try:
             await self._read_header()
@@ -19,17 +21,17 @@ class COGReader:
 
         return self
 
-    async def __aexit__(self, *args, **kwargs):
+    async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self._client.close()
 
-    async def _read(self, offset: int, bytes: int):
+    async def _read(self, offset: int, bytes: int) -> bytes:
         header = {"Range": f"bytes={offset}-{offset + bytes - 1}"}
 
         async with self._client.get(self.url, headers=header) as response:
             assert response.ok
             return await response.read()
 
-    async def _read_first_header(self):
+    async def _read_first_header(self) -> None:
         """
         First header structure
 
@@ -125,7 +127,7 @@ class COGReader:
 
         return first_ifd_pointer
 
-    async def _read_header(self):
+    async def _read_header(self) -> None:
         """
         Reads TIFF header. See functions docstrings to get it's structure
         """
@@ -137,9 +139,9 @@ class COGReader:
             await self._read_tiff_second_header()
 
     @property
-    def url(self):
+    def url(self) -> str:
         return self._url
 
     @property
-    def is_bigtiff(self):
+    def is_bigtiff(self) -> bool:
         return self._version == 43
