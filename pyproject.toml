@@ -10,26 +10,29 @@ python = "^3.8"
 aiohttp = "^3.8.0"
 
 [tool.poetry.dev-dependencies]
+aioresponses = "^0.7.2"
 black = "^21.10b0"
 flake8 = "^4.0.1"
 isort = "^5.10.1"
 jedi = "^0.18.0"
 mypy = "^0.910"
 pre-commit = "^2.15.0"
+ptpython = "^3.0.20"
+pudb = "^2021.2.2"
 pytest = "^6.2.5"
+pytest-asyncio = "^0.16.0"
 pytest-cov = "^3.0.0"
 vulture = "^2.3"
 yamlfix = "^0.7.2"
 yamllint = "^1.26.3"
+pytest-pudb = "^0.7.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.black]
-line-length = 79
-
 [tool.vulture]
+ignore_names = ["args", "kwargs"]
 exclude = ["*venv/*"]
 paths = ["."]
 sort_by_size = true

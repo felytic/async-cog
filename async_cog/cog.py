@@ -19,23 +19,15 @@ class COGReader:
 
         return self
 
-    async def __aexit__(self):
+    async def __aexit__(self, *args, **kwargs):
         await self._client.close()
 
-    @property
-    def url(self):
-        return self._url
-
-    @property
-    def is_bigtiff(self):
-        return self._version == 43
-
     async def _read(self, offset: int, bytes: int):
-        header = {"Range": f"bytes={offset}-{offset + bytes}"}
-        response = await self._client.get(self.url, headers=header)
-        assert response.ok
+        header = {"Range": f"bytes={offset}-{offset + bytes - 1}"}
 
-        return await response.read()
+        async with self._client.get(self.url, headers=header) as response:
+            assert response.ok
+            return await response.read()
 
     async def _read_first_header(self):
         """
@@ -60,7 +52,7 @@ class COGReader:
         bytes = await self._read(ENDIAN_OFFSET, ENDIAN_BYTES + VERSION_BYTES)
 
         endian = bytes[ENDIAN_OFFSET:ENDIAN_BYTES]
-        version = bytes[VERSION_OFFSET:VERSION_BYTES]
+        version_bytes = bytes[VERSION_OFFSET:]
 
         assert endian in (b"II", b"MM")
 
@@ -69,7 +61,7 @@ class COGReader:
         elif endian == b"MM":
             self._byte_order = "big"
 
-        version = int.from_bytes(version, self._byte_order)
+        version = int.from_bytes(version_bytes, self._byte_order)
 
         assert version == 42 or version == 43
         self._version = version
@@ -143,3 +135,11 @@ class COGReader:
             await self._read_bigtiff_second_header()
         else:
             await self._read_tiff_second_header()
+
+    @property
+    def url(self):
+        return self._url
+
+    @property
+    def is_bigtiff(self):
+        return self._version == 43
