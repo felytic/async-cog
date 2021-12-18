@@ -34,3 +34,19 @@ repos:
     rev: v2.3
     hooks:
       - id: vulture
+  - repo: local
+    hooks:
+      - id: pytest-coverage
+        name: pytest-coverage
+        entry: coverage run -m pytest
+        language: system
+        pass_filenames: false
+        always_run: true
+  - repo: local
+    hooks:
+      - id: coverage-report
+        name: coverage-report
+        entry: coverage report --fail-under=100
+        language: system
+        pass_filenames: false
+        always_run: true
