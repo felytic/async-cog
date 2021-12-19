@@ -8,6 +8,7 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "^3.8"
 aiohttp = "^3.8.0"
+pydantic = "^1.8.2"
 
 [tool.poetry.dev-dependencies]
 aioresponses = "^0.7.2"

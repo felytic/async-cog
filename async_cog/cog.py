@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, List, Literal
 
 from aiohttp import ClientSession
+
+from async_cog.ifd import IFD
 
 
 class COGReader:
@@ -10,12 +12,17 @@ class COGReader:
         self._url: str = url
         self._version: int
         self._byte_order: Literal["little", "big"]
-        self._offset_size: Literal[4, 8]
+        self._pointer_size: Literal[4, 8]
+        self._ifd_n_size: Literal[2, 8]
+        self._ifd_entry_size: Literal[12, 20]
+        self._first_ifd_pointer: int
+        self._ifds: List[IFD] = []
 
     async def __aenter__(self) -> COGReader:
         self._client = ClientSession()
         try:
             await self._read_header()
+            await self._read_idfs()
         except AssertionError:
             raise ValueError("Invalid file format")
 
@@ -24,8 +31,8 @@ class COGReader:
     async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self._client.close()
 
-    async def _read(self, offset: int, bytes: int) -> bytes:
-        header = {"Range": f"bytes={offset}-{offset + bytes - 1}"}
+    async def _read(self, offset: int, size: int) -> bytes:
+        header = {"Range": f"bytes={offset}-{offset + size - 1}"}
 
         async with self._client.get(self.url, headers=header) as response:
             assert response.ok
@@ -36,7 +43,7 @@ class COGReader:
         First header structure
 
         +------+-----+------------------------------------------------+
-        |offset|bytes|                                           value|
+        |offset| size|                                           value|
         +------+-----+------------------------------------------------+
         |     0|    2|               "II" for little-endian byte order|
         |      |     |               "MM" for big-endian byte order   |
@@ -46,15 +53,15 @@ class COGReader:
         """
 
         ENDIAN_OFFSET = 0
-        ENDIAN_BYTES = 2
+        ENDIAN_SIZE = 2
 
         VERSION_OFFSET = 2
-        VERSION_BYTES = 2
+        VERSION_SIZE = 2
 
-        bytes = await self._read(ENDIAN_OFFSET, ENDIAN_BYTES + VERSION_BYTES)
+        header_data = await self._read(ENDIAN_OFFSET, ENDIAN_SIZE + VERSION_SIZE)
 
-        endian = bytes[ENDIAN_OFFSET:ENDIAN_BYTES]
-        version_bytes = bytes[VERSION_OFFSET:]
+        endian = header_data[ENDIAN_OFFSET:ENDIAN_SIZE]
+        version_data = header_data[VERSION_OFFSET:]
 
         assert endian in (b"II", b"MM")
 
@@ -63,7 +70,7 @@ class COGReader:
         elif endian == b"MM":
             self._byte_order = "big"
 
-        version = int.from_bytes(version_bytes, self._byte_order)
+        version = int.from_bytes(version_data, self._byte_order)
 
         assert version == 42 or version == 43
         self._version = version
@@ -73,16 +80,19 @@ class COGReader:
         Second header structure for TIFF
 
         +------+-----+---------------------+
-        |offset|bytes|                value|
+        |offset| size|                value|
         +------+-----+---------------------+
         |     4|    4| Pointer to first IFD|
         +------+-----+---------------------+
         """
-        self._offset_size = 4
+        self._pointer_size = 4
+        self._ifd_n_size = 2
+        self._ifd_entry_size = 12
+
         POINTER_OFFSET = 4
 
-        bytes = await self._read(POINTER_OFFSET, self._offset_size)
-        first_ifd_pointer = int.from_bytes(bytes, self._byte_order)
+        pointer_data = await self._read(POINTER_OFFSET, self._pointer_size)
+        first_ifd_pointer = int.from_bytes(pointer_data, self._byte_order)
 
         return first_ifd_pointer
 
@@ -91,7 +101,7 @@ class COGReader:
         Second header structure for BigTIFF
 
         +------+-----+----------------------------------------------+
-        |offset|bytes|                                         value|
+        |offset| size|                                         value|
         +------+-----+----------------------------------------------+
         |     4|    2| Bytesize of IFD pointers (should always be 8)|
         +------+-----+----------------------------------------------+
@@ -101,28 +111,30 @@ class COGReader:
         +------+-----+----------------------------------------------+
         """
 
-        self._offset_size = 8
+        self._pointer_size = 8
+        self._ifd_n_size = 8
+        self._ifd_entry_size = 20
 
         BYTESIZE_OFFSET = 4
-        BYTESIZE_BYTES = 2
-        PLACEHOLDER_BYTES = 2
+        BYTESIZE_SIZE = 2
+        PLACEHOLDER_SIZE = 2
 
-        bytes = await self._read(
+        header_data = await self._read(
             BYTESIZE_OFFSET,
-            BYTESIZE_BYTES + PLACEHOLDER_BYTES + self._offset_size,
+            BYTESIZE_SIZE + PLACEHOLDER_SIZE + self._pointer_size,
         )
 
-        bytesize_data = bytes[:BYTESIZE_BYTES]
+        bytesize_data = header_data[:BYTESIZE_SIZE]
         bytesize = int.from_bytes(bytesize_data, self._byte_order)
 
         assert bytesize == 8
 
-        placeholder_data = bytes[BYTESIZE_BYTES:PLACEHOLDER_BYTES]
+        placeholder_data = header_data[BYTESIZE_SIZE:PLACEHOLDER_SIZE]
         placeholder = int.from_bytes(placeholder_data, self._byte_order)
 
         assert placeholder == 0
 
-        pointer_data = bytes[-self._offset_size :]
+        pointer_data = header_data[-self._pointer_size :]
         first_ifd_pointer = int.from_bytes(pointer_data, self._byte_order)
 
         return first_ifd_pointer
@@ -134,9 +146,50 @@ class COGReader:
         await self._read_first_header()
 
         if self.is_bigtiff:
-            await self._read_bigtiff_second_header()
+            self._first_ifd_pointer = await self._read_bigtiff_second_header()
         else:
-            await self._read_tiff_second_header()
+            self._first_ifd_pointer = await self._read_tiff_second_header()
+
+    async def _read_ifd(self, ifd_pointer: int) -> IFD:
+        """
+        IFD structure (all offsets are relative to ifd_offset):
+        +------+-----+------------------------------------------+
+        |offset| size|                                     value|
+        +------+-----+------------------------------------------+
+        |     0|    2|           n — number of directory Entries|
+        +------+-----+------------------------------------------+
+        |     2|   12|                         Directory entry 0|
+        +------+-----+------------------------------------------+
+        |   ...|  ...|                                       ...|
+        +------+-----+------------------------------------------+
+        |2+x*12|   12|                         Directory entry x|
+        +------+-----+------------------------------------------+
+        |   ...|  ...|                                       ...|
+        +------+-----+------------------------------------------+
+        |2+n*12|   4 | Pointer to next IFD (8 bytes for BigTIFF)|
+        +------+-----+------------------------------------------+
+        """
+
+        n_data = await self._read(ifd_pointer, self._ifd_n_size)
+        n_entries = int.from_bytes(n_data, self._byte_order)
+
+        entries_size = n_entries * self._ifd_entry_size + self._pointer_size
+        entries_data = await self._read(ifd_pointer + self._ifd_n_size, entries_size)
+
+        next_ifd_pointer_data = entries_data[-self._pointer_size :]
+        next_ifd_pointer = int.from_bytes(next_ifd_pointer_data, self._byte_order)
+
+        return IFD(
+            offset=ifd_pointer, n_entries=n_entries, next_ifd_pointer=next_ifd_pointer
+        )
+
+    async def _read_idfs(self) -> None:
+        pointer = self._first_ifd_pointer
+
+        while pointer > 0:
+            ifd = await self._read_ifd(pointer)
+            self._ifds.append(ifd)
+            pointer = ifd.next_ifd_pointer
 
     @property
     def url(self) -> str:
