@@ -4,7 +4,7 @@ from typing import Any, List, Literal
 
 from aiohttp import ClientSession
 
-from async_cog.ifd import IFD
+from async_cog.ifd import IFD, Tag
 
 
 class COGReader:
@@ -14,7 +14,7 @@ class COGReader:
         self._byte_order: Literal["little", "big"]
         self._pointer_size: Literal[4, 8]
         self._ifd_n_size: Literal[2, 8]
-        self._ifd_entry_size: Literal[12, 20]
+        self._tag_size: Literal[12, 20]
         self._first_ifd_pointer: int
         self._ifds: List[IFD] = []
 
@@ -87,7 +87,7 @@ class COGReader:
         """
         self._pointer_size = 4
         self._ifd_n_size = 2
-        self._ifd_entry_size = 12
+        self._tag_size = 12
 
         POINTER_OFFSET = 4
 
@@ -113,7 +113,7 @@ class COGReader:
 
         self._pointer_size = 8
         self._ifd_n_size = 8
-        self._ifd_entry_size = 20
+        self._tag_size = 20
 
         BYTESIZE_OFFSET = 4
         BYTESIZE_SIZE = 2
@@ -150,19 +150,49 @@ class COGReader:
         else:
             self._first_ifd_pointer = await self._read_tiff_second_header()
 
+    def tag_from_tag_data(self, tag_data: bytes) -> Tag:
+        CODE_SIZE = 2
+        TYPE_SIZE = 2
+        N_VALUES_OFFSET = CODE_SIZE + TYPE_SIZE
+        N_VALUES_SIZE = 2
+        POINTER_OFFSET = N_VALUES_OFFSET + N_VALUES_SIZE
+
+        code_data = tag_data[:CODE_SIZE]
+        code = int.from_bytes(code_data, self._byte_order)
+
+        type_data = tag_data[CODE_SIZE : CODE_SIZE + TYPE_SIZE]
+        tag_type = int.from_bytes(type_data, self._byte_order)
+
+        n_values_data = tag_data[N_VALUES_OFFSET : N_VALUES_OFFSET + N_VALUES_SIZE]
+        n_values = int.from_bytes(n_values_data, self._byte_order)
+
+        pointer_data = tag_data[POINTER_OFFSET : POINTER_OFFSET + self._pointer_size]
+        pointer = int.from_bytes(pointer_data, self._byte_order)
+
+        return Tag(code=code, type=tag_type, n_values=n_values, pointer=pointer)
+
+    def tags_from_tags_data(self, n_tags: int, tags_data: bytes) -> List[Tag]:
+        tags = []
+        for i in range(n_tags):
+            data = tags_data[i * self._tag_size : (i + 1) * self._tag_size]
+            tag = self.tag_from_tag_data(data)
+            tags.append(tag)
+
+        return tags
+
     async def _read_ifd(self, ifd_pointer: int) -> IFD:
         """
         IFD structure (all offsets are relative to ifd_offset):
         +------+-----+------------------------------------------+
         |offset| size|                                     value|
         +------+-----+------------------------------------------+
-        |     0|    2|           n — number of directory Entries|
+        |     0|    2|                 n — number of tags in IFD|
         +------+-----+------------------------------------------+
-        |     2|   12|                         Directory entry 0|
+        |     2|   12|                                Tag 0 data|
         +------+-----+------------------------------------------+
         |   ...|  ...|                                       ...|
         +------+-----+------------------------------------------+
-        |2+x*12|   12|                         Directory entry x|
+        |2+x*12|   12|                                     Tag x|
         +------+-----+------------------------------------------+
         |   ...|  ...|                                       ...|
         +------+-----+------------------------------------------+
@@ -171,16 +201,20 @@ class COGReader:
         """
 
         n_data = await self._read(ifd_pointer, self._ifd_n_size)
-        n_entries = int.from_bytes(n_data, self._byte_order)
+        n_tags = int.from_bytes(n_data, self._byte_order)
 
-        entries_size = n_entries * self._ifd_entry_size + self._pointer_size
-        entries_data = await self._read(ifd_pointer + self._ifd_n_size, entries_size)
+        tags_size = n_tags * self._tag_size + self._pointer_size
+        tags_data = await self._read(ifd_pointer + self._ifd_n_size, tags_size)
+        tags = self.tags_from_tags_data(n_tags, tags_data)
 
-        next_ifd_pointer_data = entries_data[-self._pointer_size :]
+        next_ifd_pointer_data = tags_data[-self._pointer_size :]
         next_ifd_pointer = int.from_bytes(next_ifd_pointer_data, self._byte_order)
 
         return IFD(
-            offset=ifd_pointer, n_entries=n_entries, next_ifd_pointer=next_ifd_pointer
+            offset=ifd_pointer,
+            n_tags=n_tags,
+            next_ifd_pointer=next_ifd_pointer,
+            tags=tags,
         )
 
     async def _read_idfs(self) -> None:
