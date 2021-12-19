@@ -27,6 +27,7 @@ yamlfix = "^0.7.2"
 yamllint = "^1.26.3"
 pytest-pudb = "^0.7.0"
 coverage = "^6.2"
+flake8-print = "^4.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
