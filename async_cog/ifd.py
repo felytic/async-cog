@@ -1,7 +1,7 @@
-from typing import List
+from typing import List, Optional
 
-from PIL.TiffTags import lookup
-from pydantic import BaseModel
+from PIL.TiffTags import TAGS_V2, TagInfo
+from pydantic import BaseModel, validator
 
 
 class Tag(BaseModel):
@@ -9,11 +9,22 @@ class Tag(BaseModel):
     type: int
     n_values: int
     pointer: int
+    data: Optional[bytes]
+
+    @validator("code")
+    def validate_tag_supported(cls, code: int) -> int:
+        if code not in TAGS_V2:
+            raise ValueError(f"Tag with code {code} is not supported")
+
+        return code
+
+    @property
+    def tag_info(self) -> TagInfo:
+        return TAGS_V2.get(self.code)
 
     @property
     def name(self) -> str:
-        tag_info = lookup(self.code)
-        return str(tag_info.name)
+        return str(self.tag_info.name)
 
     def __repr__(self) -> str:
         return (

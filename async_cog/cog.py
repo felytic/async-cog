@@ -151,6 +151,21 @@ class COGReader:
             self._first_ifd_pointer = await self._read_tiff_second_header()
 
     def tag_from_tag_data(self, tag_data: bytes) -> Tag:
+        """
+        Tag structure
+
+        +------+-----+-------------------------------------------------------+
+        |offset| size|                                                  value|
+        +------+-----+-------------------------------------------------------+
+        |     0|    2|                            Tag code (see PIL.TiffTags)|
+        +------+-----+-------------------------------------------------------+
+        |     2|    2|                       Tag data type (see PIL.TiffTags)|
+        +------+-----+-------------------------------------------------------+
+        |     4|    4|                                       Number of values|
+        +------+-----+-------------------------------------------------------+
+        |     8|    4| Pointer to the data or data itself if it's length <= 4|
+        +------+-----+-------------------------------------------------------+
+        """
         CODE_SIZE = 2
         TYPE_SIZE = 2
         N_VALUES_OFFSET = CODE_SIZE + TYPE_SIZE
@@ -175,7 +190,11 @@ class COGReader:
         tags = []
         for i in range(n_tags):
             data = tags_data[i * self._tag_size : (i + 1) * self._tag_size]
-            tag = self.tag_from_tag_data(data)
+            try:
+                tag = self.tag_from_tag_data(data)
+            except ValueError:
+                continue
+
             tags.append(tag)
 
         return tags

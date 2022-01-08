@@ -88,7 +88,6 @@ async def test_read_ifds() -> None:
                         Tag(code=257, type=3, n_values=1, pointer=4194304),
                         Tag(code=258, type=3, n_values=3, pointer=11141120),
                         Tag(code=259, type=3, n_values=1, pointer=458752),
-                        Tag(code=262, type=3, n_values=1, pointer=131072),
                         Tag(code=277, type=3, n_values=1, pointer=196608),
                         Tag(code=284, type=3, n_values=1, pointer=65536),
                         Tag(code=322, type=3, n_values=1, pointer=16777216),
@@ -302,5 +301,5 @@ async def test_read_ifds_big_tiff() -> None:
 def test_tag_repr() -> None:
     tag = Tag(code=254, type=4, n_values=1, pointer=281474976710656)
     assert tag.__repr__() == (
-        "NewSubfileType(code: 254, type: 4, n_values: 1, " "pointer: 281474976710656)"
+        "NewSubfileType(code: 254, type: 4, n_values: 1, pointer: 281474976710656)"
     )
