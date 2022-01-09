@@ -154,22 +154,22 @@ class COGReader:
         """
         Tag structure
 
-        +------+-----+-------------------------------------------------------+
-        |offset| size|                                                  value|
-        +------+-----+-------------------------------------------------------+
-        |     0|    2|                            Tag code (see PIL.TiffTags)|
-        +------+-----+-------------------------------------------------------+
-        |     2|    2|                       Tag data type (see PIL.TiffTags)|
-        +------+-----+-------------------------------------------------------+
-        |     4|    4|                                       Number of values|
-        +------+-----+-------------------------------------------------------+
-        |     8|    4| Pointer to the data or data itself if it's length <= 4|
-        +------+-----+-------------------------------------------------------+
+        +------+------------+-------------------------------------------------------+
+        |offset|        size|                                                  value|
+        +------+------------+-------------------------------------------------------+
+        |     0|           2|                            Tag code (see PIL.TiffTags)|
+        +------+------------+-------------------------------------------------------+
+        |     2|           2|                       Tag data type (see PIL.TiffTags)|
+        +------+------------+-------------------------------------------------------+
+        |     4|           4|                                       Number of values|
+        +------+------------+-------------------------------------------------------+
+        |     8|pointer_size|    Pointer to the data or data itself if it first here|
+        +------+------------+-------------------------------------------------------+
         """
         CODE_SIZE = 2
         TYPE_SIZE = 2
         N_VALUES_OFFSET = CODE_SIZE + TYPE_SIZE
-        N_VALUES_SIZE = 2
+        N_VALUES_SIZE = 4
         POINTER_OFFSET = N_VALUES_OFFSET + N_VALUES_SIZE
 
         code_data = tag_data[:CODE_SIZE]
@@ -184,7 +184,13 @@ class COGReader:
         pointer_data = tag_data[POINTER_OFFSET : POINTER_OFFSET + self._pointer_size]
         pointer = int.from_bytes(pointer_data, self._byte_order)
 
-        return Tag(code=code, type=tag_type, n_values=n_values, pointer=pointer)
+        tag = Tag(code=code, type=tag_type, n_values=n_values, pointer=pointer)
+
+        if tag.data_size <= self._pointer_size:
+            tag.data = pointer_data[: tag.data_size]
+            tag.pointer = 0
+
+        return tag
 
     def tags_from_tags_data(self, n_tags: int, tags_data: bytes) -> List[Tag]:
         tags = []
@@ -202,21 +208,21 @@ class COGReader:
     async def _read_ifd(self, ifd_pointer: int) -> IFD:
         """
         IFD structure (all offsets are relative to ifd_offset):
-        +------+-----+------------------------------------------+
-        |offset| size|                                     value|
-        +------+-----+------------------------------------------+
-        |     0|    2|                 n — number of tags in IFD|
-        +------+-----+------------------------------------------+
-        |     2|   12|                                Tag 0 data|
-        +------+-----+------------------------------------------+
-        |   ...|  ...|                                       ...|
-        +------+-----+------------------------------------------+
-        |2+x*12|   12|                                     Tag x|
-        +------+-----+------------------------------------------+
-        |   ...|  ...|                                       ...|
-        +------+-----+------------------------------------------+
-        |2+n*12|   4 | Pointer to next IFD (8 bytes for BigTIFF)|
-        +------+-----+------------------------------------------+
+        +------------+------------+------------------------------------------+
+        |      offset|        size|                                     value|
+        +------------+------------+------------------------------------------+
+        |           0|           2|                 n — number of tags in IFD|
+        +------------+------------+------------------------------------------+
+        |           2|    tag_size|                                Tag 0 data|
+        +------------+------------+------------------------------------------+
+        |         ...|         ...|                                       ...|
+        +------------+------------+------------------------------------------+
+        |2+x*tag_size|    tag_size|                                     Tag x|
+        +------------+------------+------------------------------------------+
+        |         ...|         ...|                                       ...|
+        +------------+------------+------------------------------------------+
+        |2+n*tag_size|pointer_size|                      Pointer to next IFD |
+        +------------+------------+------------------------------------------+
         """
 
         n_data = await self._read(ifd_pointer, self._ifd_n_size)

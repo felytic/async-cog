@@ -8,14 +8,15 @@ TAG_TYPES = {
     1: "B",  # BYTE
     2: "c",  # ASCII
     3: "H",  # SHORT
-    4: "L",  # LONG
-    # FIXME
+    4: "I",  # LONG
+    # FIXME In TIFF format, a RATIONAL value is a fractional value
+    # represented by the ratio of two unsigned 4-byte integers.
     5: "Q",  # RATIONAL
     6: "b",  # SBYTE
     7: "c",  # UNDEFINED
     8: "h",  # SSHORT
-    9: "l",  # SLONG
-    # FIXME
+    9: "i",  # SLONG
+    # FIXME same for signed RATIONAL
     10: "q",  # SRATIONAL
     11: "f",  # FLOAT
     12: "d",  # DOUBLE
