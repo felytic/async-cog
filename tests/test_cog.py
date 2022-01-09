@@ -499,10 +499,15 @@ async def test_read_ifds_big_tiff() -> None:
 
 
 def test_tag_format() -> None:
-    tag = Tag(code=254, type=4, n_values=13, pointer=281474976710656)
+    tag = Tag(code=254, type=4, n_values=13, pointer=0)
     assert tag.format == "13I"
 
 
 def test_tag_size() -> None:
-    tag = Tag(code=254, type=4, n_values=13, pointer=281474976710656)
+    tag = Tag(code=254, type=4, n_values=13, pointer=0)
     assert tag.data_size == 52
+
+
+def test_tag_name() -> None:
+    tag = Tag(code=34735, type=3, n_values=32, pointer=502)
+    assert tag.name == "GeoKeyDirectoryTag"
