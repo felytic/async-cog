@@ -9,7 +9,6 @@ license = "MIT"
 python = "^3.8"
 aiohttp = "^3.8.0"
 pydantic = "^1.8.2"
-Pillow = "^8.4.0"
 
 [tool.poetry.dev-dependencies]
 aioresponses = "^0.7.2"
