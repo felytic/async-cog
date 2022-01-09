@@ -1,3 +1,4 @@
+from struct import calcsize
 from typing import List, Optional
 
 from pydantic import BaseModel, validator
@@ -39,6 +40,10 @@ class Tag(BaseModel):
     @property
     def format(self) -> str:
         return f"{self.n_values}{TAG_TYPES[self.type]}"
+
+    @property
+    def data_size(self) -> int:
+        return calcsize(self.format)
 
 
 class IFD(BaseModel):

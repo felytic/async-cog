@@ -301,3 +301,8 @@ async def test_read_ifds_big_tiff() -> None:
 def test_tag_format() -> None:
     tag = Tag(code=254, type=4, n_values=13, pointer=281474976710656)
     assert tag.format == "13L"
+
+
+def test_tag_size() -> None:
+    tag = Tag(code=254, type=4, n_values=13, pointer=281474976710656)
+    assert tag.data_size == 104
