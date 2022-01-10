@@ -8,7 +8,7 @@ class Tag(BaseModel):
     code: int
     type: int
     n_values: int
-    pointer: int
+    pointer: Optional[int]
     data: Optional[bytes]
 
     @validator("type")
