@@ -9,7 +9,6 @@ license = "MIT"
 python = "^3.8"
 aiohttp = "^3.8.0"
 pydantic = "^1.8.2"
-Pillow = "^8.4.0"
 
 [tool.poetry.dev-dependencies]
 aioresponses = "^0.7.2"
@@ -36,7 +35,8 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.vulture]
-ignore_names = ["args", "kwargs"]
+ignore_names = ["args", "kwargs", "cls"]
+ignore_decorators = ["@validator"]
 exclude = ["*venv/*"]
 paths = ["."]
 sort_by_size = true
