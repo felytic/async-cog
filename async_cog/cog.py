@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, List, Literal
+from struct import calcsize, pack, unpack
+from typing import Any, Iterator, List, Literal
 
 from aiohttp import ClientSession
 
@@ -8,15 +9,18 @@ from async_cog.ifd import IFD, Tag
 
 
 class COGReader:
+    _version: int
+    _first_ifd_pointer: int
+    _ifds: List[IFD]
+    # For characters meainng in *_fmt
+    # https://docs.python.org/3.10/library/struct.html#format-characters
+    _endian_fmt: Literal["<", ">"]
+    _pointer_fmt: Literal["I", "Q"]
+    _n_fmt: Literal["H", "Q"]
+
     def __init__(self, url: str):
         self._url: str = url
-        self._version: int
-        self._byte_order: Literal["little", "big"]
-        self._pointer_size: Literal[4, 8]
-        self._ifd_n_size: Literal[2, 8]
-        self._tag_size: Literal[12, 20]
-        self._first_ifd_pointer: int
-        self._ifds: List[IFD] = []
+        self._ifds = []
 
     async def __aenter__(self) -> COGReader:
         self._client = ClientSession()
@@ -38,6 +42,21 @@ class COGReader:
             assert response.ok
             return await response.read()
 
+    @property
+    def tag_format(self) -> str:
+        return self.format(f"HH2{self._pointer_fmt}")
+
+    @property
+    def url(self) -> str:
+        return self._url
+
+    @property
+    def is_bigtiff(self) -> bool:
+        return self._version == 43
+
+    def format(self, format_str: str) -> str:
+        return f"{self._endian_fmt}{format_str}"
+
     async def _read_first_header(self) -> None:
         """
         First header structure
@@ -51,26 +70,20 @@ class COGReader:
         |     2|    2| Version number (42 for TIFF and 43 for BigTIFF)|
         +------+-----+------------------------------------------------+
         """
+        OFFSET = 0
 
-        ENDIAN_OFFSET = 0
-        ENDIAN_SIZE = 2
+        data = await self._read(OFFSET, 4)
 
-        VERSION_OFFSET = 2
-        VERSION_SIZE = 2
-
-        header_data = await self._read(ENDIAN_OFFSET, ENDIAN_SIZE + VERSION_SIZE)
-
-        endian = header_data[ENDIAN_OFFSET:ENDIAN_SIZE]
-        version_data = header_data[VERSION_OFFSET:]
-
-        assert endian in (b"II", b"MM")
+        (endian,) = unpack("2s2x", data)
 
         if endian == b"II":
-            self._byte_order = "little"
+            self._endian_fmt = "<"
         elif endian == b"MM":
-            self._byte_order = "big"
+            self._endian_fmt = ">"
+        else:
+            raise AssertionError
 
-        version = int.from_bytes(version_data, self._byte_order)
+        (version,) = unpack(self.format("2xH"), data)
 
         assert version == 42 or version == 43
         self._version = version
@@ -85,16 +98,12 @@ class COGReader:
         |     4|    4| Pointer to first IFD|
         +------+-----+---------------------+
         """
-        self._pointer_size = 4
-        self._ifd_n_size = 2
-        self._tag_size = 12
+        OFFSET = 4
 
-        POINTER_OFFSET = 4
+        data = await self._read(OFFSET, calcsize(self._pointer_fmt))
+        (first_ifd_pointer,) = unpack(self.format(self._pointer_fmt), data)
 
-        pointer_data = await self._read(POINTER_OFFSET, self._pointer_size)
-        first_ifd_pointer = int.from_bytes(pointer_data, self._byte_order)
-
-        return first_ifd_pointer
+        return int(first_ifd_pointer)
 
     async def _read_bigtiff_second_header(self) -> int:
         """
@@ -111,33 +120,17 @@ class COGReader:
         +------+-----+----------------------------------------------+
         """
 
-        self._pointer_size = 8
-        self._ifd_n_size = 8
-        self._tag_size = 20
+        OFFSET = 4
+        format_str = self.format("HHQ")
 
-        BYTESIZE_OFFSET = 4
-        BYTESIZE_SIZE = 2
-        PLACEHOLDER_SIZE = 2
+        data = await self._read(OFFSET, calcsize(format_str))
 
-        header_data = await self._read(
-            BYTESIZE_OFFSET,
-            BYTESIZE_SIZE + PLACEHOLDER_SIZE + self._pointer_size,
-        )
-
-        bytesize_data = header_data[:BYTESIZE_SIZE]
-        bytesize = int.from_bytes(bytesize_data, self._byte_order)
+        bytesize, placeholder, pointer = unpack(format_str, data)
 
         assert bytesize == 8
-
-        placeholder_data = header_data[BYTESIZE_SIZE:PLACEHOLDER_SIZE]
-        placeholder = int.from_bytes(placeholder_data, self._byte_order)
-
         assert placeholder == 0
 
-        pointer_data = header_data[-self._pointer_size :]
-        first_ifd_pointer = int.from_bytes(pointer_data, self._byte_order)
-
-        return first_ifd_pointer
+        return int(pointer)
 
     async def _read_header(self) -> None:
         """
@@ -146,64 +139,53 @@ class COGReader:
         await self._read_first_header()
 
         if self.is_bigtiff:
+            self._pointer_fmt = "Q"
+            self._n_fmt = "Q"
+
             self._first_ifd_pointer = await self._read_bigtiff_second_header()
         else:
+            self._pointer_fmt = "I"
+            self._n_fmt = "H"
+
             self._first_ifd_pointer = await self._read_tiff_second_header()
 
     def tag_from_tag_data(self, tag_data: bytes) -> Tag:
         """
         Tag structure
 
-        +------+------------+-------------------------------------------------------+
-        |offset|        size|                                                  value|
-        +------+------------+-------------------------------------------------------+
-        |     0|           2|                            Tag code (see PIL.TiffTags)|
-        +------+------------+-------------------------------------------------------+
-        |     2|           2|                       Tag data type (see PIL.TiffTags)|
-        +------+------------+-------------------------------------------------------+
-        |     4|           4|                                       Number of values|
-        +------+------------+-------------------------------------------------------+
-        |     8|pointer_size|    Pointer to the data or data itself if it first here|
-        +------+------------+-------------------------------------------------------+
+        +--------------+------------+-----------------------------------+
+        |        offset|        size|                              value|
+        +--------------+------------+-----------------------------------+
+        |             0|           2|       Tag code (see ifd.TAG_NAMES)|
+        +--------------+------------+-----------------------------------+
+        |             2|           2|  Tag data type (see ifd.TAG_TYPES)|
+        +--------------+------------+-----------------------------------+
+        |             4|pointer_size|                   Number of values|
+        +--------------+------------+-----------------------------------+
+        |4+pointer_size|pointer_size| Pointer to the data or data itself|
+        |              |            |       if it's size <= pointer_size|
+        +--------------+------------+-----------------------------------+
         """
-        CODE_SIZE = 2
-        TYPE_SIZE = 2
-        N_VALUES_OFFSET = CODE_SIZE + TYPE_SIZE
-        N_VALUES_SIZE = 4
-        POINTER_OFFSET = N_VALUES_OFFSET + N_VALUES_SIZE
-
-        code_data = tag_data[:CODE_SIZE]
-        code = int.from_bytes(code_data, self._byte_order)
-
-        type_data = tag_data[CODE_SIZE : CODE_SIZE + TYPE_SIZE]
-        tag_type = int.from_bytes(type_data, self._byte_order)
-
-        n_values_data = tag_data[N_VALUES_OFFSET : N_VALUES_OFFSET + N_VALUES_SIZE]
-        n_values = int.from_bytes(n_values_data, self._byte_order)
-
-        pointer_data = tag_data[POINTER_OFFSET : POINTER_OFFSET + self._pointer_size]
-        pointer = int.from_bytes(pointer_data, self._byte_order)
+        code, tag_type, n_values, pointer = unpack(self.tag_format, tag_data)
 
         tag = Tag(code=code, type=tag_type, n_values=n_values, pointer=pointer)
 
-        if tag.data_size <= self._pointer_size:
-            tag.data = pointer_data[: tag.data_size]
+        if tag.data_size <= calcsize(self._pointer_fmt):
+            tag.data = pack(self._pointer_fmt, pointer)[: tag.data_size]
             tag.pointer = 0
 
         return tag
 
-    def tags_from_tags_data(self, n_tags: int, tags_data: bytes) -> List[Tag]:
-        tags = []
-        for i in range(n_tags):
-            data = tags_data[i * self._tag_size : (i + 1) * self._tag_size]
+    def tags_from_data(self, n_tags: int, tags_data: bytes) -> Iterator[Tag]:
+        size = calcsize(self.tag_format)
+
+        for tag_data in unpack(n_tags * f"{size}s", tags_data):
             try:
-                tag = self.tag_from_tag_data(data)
+                tag = self.tag_from_tag_data(tag_data)
             except ValueError:
                 continue
 
-            tags.append(tag)
-
-        return tags
+            yield tag
 
     async def _read_ifd(self, ifd_pointer: int) -> IFD:
         """
@@ -211,7 +193,7 @@ class COGReader:
         +------------+------------+------------------------------------------+
         |      offset|        size|                                     value|
         +------------+------------+------------------------------------------+
-        |           0|           2|                 n — number of tags in IFD|
+        |           0|  ifd_n_size|                 n — number of tags in IFD|
         +------------+------------+------------------------------------------+
         |           2|    tag_size|                                Tag 0 data|
         +------------+------------+------------------------------------------+
@@ -225,20 +207,24 @@ class COGReader:
         +------------+------------+------------------------------------------+
         """
 
-        n_data = await self._read(ifd_pointer, self._ifd_n_size)
-        n_tags = int.from_bytes(n_data, self._byte_order)
+        n_format = self.format(self._n_fmt)
 
-        tags_size = n_tags * self._tag_size + self._pointer_size
-        tags_data = await self._read(ifd_pointer + self._ifd_n_size, tags_size)
-        tags = self.tags_from_tags_data(n_tags, tags_data)
+        n_data = await self._read(ifd_pointer, calcsize(n_format))
+        (n_tags,) = unpack(n_format, n_data)
 
-        next_ifd_pointer_data = tags_data[-self._pointer_size :]
-        next_ifd_pointer = int.from_bytes(next_ifd_pointer_data, self._byte_order)
+        tags_len = n_tags * calcsize(self.tag_format)
+        ifd_offset = ifd_pointer + calcsize(n_format)
+        ifd_format = self.format(f"{tags_len}s{self._pointer_fmt}")
+
+        ifd_data = await self._read(ifd_offset, calcsize(ifd_format))
+
+        tags_data, pointer = unpack(ifd_format, ifd_data)
+        tags = self.tags_from_data(n_tags, tags_data)
 
         return IFD(
             offset=ifd_pointer,
             n_tags=n_tags,
-            next_ifd_pointer=next_ifd_pointer,
+            next_ifd_pointer=pointer,
             tags=tags,
         )
 
@@ -249,11 +235,3 @@ class COGReader:
             ifd = await self._read_ifd(pointer)
             self._ifds.append(ifd)
             pointer = ifd.next_ifd_pointer
-
-    @property
-    def url(self) -> str:
-        return self._url
-
-    @property
-    def is_bigtiff(self) -> bool:
-        return self._version == 43
