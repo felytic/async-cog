@@ -8,7 +8,7 @@ class Tag(BaseModel):
     code: int
     type: int
     n_values: int
-    pointer: Optional[int]
+    data_pointer: Optional[int]
     data: Optional[bytes]
 
     @validator("type")
@@ -32,7 +32,7 @@ class Tag(BaseModel):
 
 
 class IFD(BaseModel):
-    offset: int
+    pointer: int
     n_tags: int
     next_ifd_pointer: int
     tags: List[Tag]

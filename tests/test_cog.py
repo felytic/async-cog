@@ -91,13 +91,13 @@ async def test_read_ifds() -> None:
         async with COGReader(url) as reader:
             assert reader._ifds == [
                 IFD(
-                    offset=8,
+                    pointer=8,
                     n_tags=13,
                     next_ifd_pointer=4282,
                     tags=[
                         Tag(code=256, type=3, n_values=1, data=b"@\x00"),
                         Tag(code=257, type=3, n_values=1, data=b"@\x00"),
-                        Tag(code=258, type=3, n_values=3, pointer=170, data=None),
+                        Tag(code=258, type=3, n_values=3, data_pointer=170, data=None),
                         Tag(code=259, type=3, n_values=1, data=b"\x07\x00"),
                         Tag(code=277, type=3, n_values=1, data=b"\x03\x00"),
                         Tag(code=284, type=3, n_values=1, data=b"\x01\x00"),
@@ -115,12 +115,12 @@ async def test_read_ifds() -> None:
                             n_values=1,
                             data=b"\xbb\x0f\x00\x00",
                         ),
-                        Tag(code=339, type=3, n_values=3, pointer=176, data=None),
-                        Tag(code=347, type=7, n_values=73, pointer=182, data=None),
+                        Tag(code=339, type=3, n_values=3, data_pointer=176, data=None),
+                        Tag(code=347, type=7, n_values=73, data_pointer=182, data=None),
                     ],
                 ),
                 IFD(
-                    offset=4282,
+                    pointer=4282,
                     n_tags=14,
                     next_ifd_pointer=4542,
                     tags=[
@@ -132,7 +132,7 @@ async def test_read_ifds() -> None:
                         ),
                         Tag(code=256, type=3, n_values=1, data=b" \x00"),
                         Tag(code=257, type=3, n_values=1, data=b" \x00"),
-                        Tag(code=258, type=3, n_values=3, pointer=4456, data=None),
+                        Tag(code=258, type=3, n_values=3, data_pointer=4456, data=None),
                         Tag(code=259, type=3, n_values=1, data=b"\x07\x00"),
                         Tag(code=262, type=3, n_values=1, data=b"\x02\x00"),
                         Tag(code=277, type=3, n_values=1, data=b"\x03\x00"),
@@ -151,12 +151,14 @@ async def test_read_ifds() -> None:
                             n_values=1,
                             data=b"\xd7\x08\x00\x00",
                         ),
-                        Tag(code=339, type=3, n_values=3, pointer=4462, data=None),
-                        Tag(code=347, type=7, n_values=73, pointer=4468, data=None),
+                        Tag(code=339, type=3, n_values=3, data_pointer=4462, data=None),
+                        Tag(
+                            code=347, type=7, n_values=73, data_pointer=4468, data=None
+                        ),
                     ],
                 ),
                 IFD(
-                    offset=4542,
+                    pointer=4542,
                     n_tags=14,
                     next_ifd_pointer=4802,
                     tags=[
@@ -168,7 +170,7 @@ async def test_read_ifds() -> None:
                         ),
                         Tag(code=256, type=3, n_values=1, data=b"\x10\x00"),
                         Tag(code=257, type=3, n_values=1, data=b"\x10\x00"),
-                        Tag(code=258, type=3, n_values=3, pointer=4716, data=None),
+                        Tag(code=258, type=3, n_values=3, data_pointer=4716, data=None),
                         Tag(code=259, type=3, n_values=1, data=b"\x07\x00"),
                         Tag(code=262, type=3, n_values=1, data=b"\x02\x00"),
                         Tag(code=277, type=3, n_values=1, data=b"\x03\x00"),
@@ -187,12 +189,14 @@ async def test_read_ifds() -> None:
                             n_values=1,
                             data=b"\xe4\x03\x00\x00",
                         ),
-                        Tag(code=339, type=3, n_values=3, pointer=4722, data=None),
-                        Tag(code=347, type=7, n_values=73, pointer=4728, data=None),
+                        Tag(code=339, type=3, n_values=3, data_pointer=4722, data=None),
+                        Tag(
+                            code=347, type=7, n_values=73, data_pointer=4728, data=None
+                        ),
                     ],
                 ),
                 IFD(
-                    offset=4802,
+                    pointer=4802,
                     n_tags=14,
                     next_ifd_pointer=5062,
                     tags=[
@@ -204,7 +208,7 @@ async def test_read_ifds() -> None:
                         ),
                         Tag(code=256, type=3, n_values=1, data=b"\x08\x00"),
                         Tag(code=257, type=3, n_values=1, data=b"\x08\x00"),
-                        Tag(code=258, type=3, n_values=3, pointer=4976, data=None),
+                        Tag(code=258, type=3, n_values=3, data_pointer=4976, data=None),
                         Tag(code=259, type=3, n_values=1, data=b"\x07\x00"),
                         Tag(code=262, type=3, n_values=1, data=b"\x02\x00"),
                         Tag(code=277, type=3, n_values=1, data=b"\x03\x00"),
@@ -223,12 +227,14 @@ async def test_read_ifds() -> None:
                             n_values=1,
                             data=b"\xa7\x03\x00\x00",
                         ),
-                        Tag(code=339, type=3, n_values=3, pointer=4982, data=None),
-                        Tag(code=347, type=7, n_values=73, pointer=4988, data=None),
+                        Tag(code=339, type=3, n_values=3, data_pointer=4982, data=None),
+                        Tag(
+                            code=347, type=7, n_values=73, data_pointer=4988, data=None
+                        ),
                     ],
                 ),
                 IFD(
-                    offset=5062,
+                    pointer=5062,
                     n_tags=14,
                     next_ifd_pointer=0,
                     tags=[
@@ -240,7 +246,7 @@ async def test_read_ifds() -> None:
                         ),
                         Tag(code=256, type=3, n_values=1, data=b"\x04\x00"),
                         Tag(code=257, type=3, n_values=1, data=b"\x04\x00"),
-                        Tag(code=258, type=3, n_values=3, pointer=5236, data=None),
+                        Tag(code=258, type=3, n_values=3, data_pointer=5236, data=None),
                         Tag(code=259, type=3, n_values=1, data=b"\x07\x00"),
                         Tag(code=262, type=3, n_values=1, data=b"\x02\x00"),
                         Tag(code=277, type=3, n_values=1, data=b"\x03\x00"),
@@ -254,8 +260,10 @@ async def test_read_ifds() -> None:
                             n_values=1,
                             data=b"&\x05\x00\x00",
                         ),
-                        Tag(code=339, type=3, n_values=3, pointer=5242, data=None),
-                        Tag(code=347, type=7, n_values=73, pointer=5248, data=None),
+                        Tag(code=339, type=3, n_values=3, data_pointer=5242, data=None),
+                        Tag(
+                            code=347, type=7, n_values=73, data_pointer=5248, data=None
+                        ),
                     ],
                 ),
             ]
@@ -273,7 +281,7 @@ async def test_read_ifds_big_tiff() -> None:
 
     assert ifds == [
         IFD(
-            offset=16,
+            pointer=16,
             n_tags=12,
             next_ifd_pointer=196880,
             tags=[
@@ -312,7 +320,7 @@ async def test_read_ifds_big_tiff() -> None:
             ],
         ),
         IFD(
-            offset=196880,
+            pointer=196880,
             n_tags=13,
             next_ifd_pointer=197156,
             tags=[
@@ -352,7 +360,7 @@ async def test_read_ifds_big_tiff() -> None:
             ],
         ),
         IFD(
-            offset=197156,
+            pointer=197156,
             n_tags=13,
             next_ifd_pointer=197432,
             tags=[
@@ -392,7 +400,7 @@ async def test_read_ifds_big_tiff() -> None:
             ],
         ),
         IFD(
-            offset=197432,
+            pointer=197432,
             n_tags=13,
             next_ifd_pointer=197708,
             tags=[
@@ -432,7 +440,7 @@ async def test_read_ifds_big_tiff() -> None:
             ],
         ),
         IFD(
-            offset=197708,
+            pointer=197708,
             n_tags=13,
             next_ifd_pointer=0,
             tags=[
@@ -477,6 +485,7 @@ async def test_read_ifds_big_tiff() -> None:
 def test_tag_format() -> None:
     tag = Tag(code=254, type=4, n_values=13)
     assert tag.format == "13I"
+    assert tag.data_pointer is None
 
 
 def test_tag_size() -> None:
@@ -485,5 +494,5 @@ def test_tag_size() -> None:
 
 
 def test_tag_name() -> None:
-    tag = Tag(code=34735, type=3, n_values=32, pointer=502)
+    tag = Tag(code=34735, type=3, n_values=32, data_pointer=502)
     assert tag.name == "GeoKeyDirectoryTag"

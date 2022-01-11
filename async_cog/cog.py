@@ -12,7 +12,7 @@ class COGReader:
     _version: int
     _first_ifd_pointer: int
     _ifds: List[IFD]
-    # For characters meainng in *_fmt
+    # For characters meainng in *_fmt attributes see:
     # https://docs.python.org/3.10/library/struct.html#format-characters
     _byte_order_fmt: Literal["<", ">"]
     _pointer_fmt: Literal["I", "Q"]
@@ -23,6 +23,10 @@ class COGReader:
         self._ifds = []
 
     async def __aenter__(self) -> COGReader:
+        """
+        Establish client session and read COG's metadata
+        """
+
         self._client = ClientSession()
 
         try:
@@ -37,22 +41,38 @@ class COGReader:
         await self._client.close()
 
     @property
-    def _tag_format(self) -> str:
-        return self._format(f"HH2{self._pointer_fmt}")
-
-    @property
     def url(self) -> str:
         return self._url
 
     @property
     def is_bigtiff(self) -> bool:
+        """
+        Is this GOG in the BigTIFF format
+        """
+
         return self._version == 43
 
+    @property
+    def _tag_format(self) -> str:
+        """
+        Return format string for struct.unpack(): two SHORTs and two pointer types.
+        For detailed tag structure see _tag_from_tag_data()
+        """
+
+        return self._format(f"2H2{self._pointer_fmt}")
+
     def _format(self, format_str: str) -> str:
-        "Adds byte-order endian to struct format string"
+        """
+        Add byte-order endian to struct format string
+        """
+
         return f"{self._byte_order_fmt}{format_str}"
 
     async def _read(self, offset: int, size: int) -> bytes:
+        """
+        Get the data from URL within the specific byte range
+        """
+
         header = {"Range": f"bytes={offset}-{offset + size - 1}"}
 
         async with self._client.get(self.url, headers=header) as response:
@@ -63,20 +83,26 @@ class COGReader:
         """
         Reads TIFF header. See functions docstrings to get it's structure
         """
+
         await self._read_first_header()
 
         if self.is_bigtiff:
-            self._pointer_fmt = "Q"
-            self._n_fmt = "Q"
+            self._pointer_fmt = "Q"  # 8 byte unsigned int
+            self._n_fmt = "Q"  # 8 byte unsigned int
 
             await self._read_bigtiff_second_header()
         else:
-            self._pointer_fmt = "I"
-            self._n_fmt = "H"
+            self._pointer_fmt = "I"  # 4 byte unsigned int
+            self._n_fmt = "H"  # 2 byte unsigned int
 
             await self._read_second_header()
 
     async def _read_idfs(self) -> None:
+        """
+        Get data for IFDs (Image File Directories).
+        See IFD structure in _read_ifd() docstring
+        """
+
         pointer = self._first_ifd_pointer
 
         while pointer > 0:
@@ -97,9 +123,10 @@ class COGReader:
         |     2|    2| Version number (42 for TIFF and 43 for BigTIFF)|
         +------+-----+------------------------------------------------+
         """
-        OFFSET = 0
 
-        data = await self._read(OFFSET, 4)
+        POINTER = 0
+
+        data = await self._read(POINTER, 4)
 
         # Read first two bytes and skip the last two
         (first_bytest,) = unpack("2s2x", data)
@@ -119,38 +146,42 @@ class COGReader:
 
     async def _read_second_header(self) -> None:
         """
-        Second header structure for TIFF
+        Second header structure for TIFF.
+        It's pointer is 4 since the first 4 bystes are for the first header
 
         +------+-----+---------------------+
         |offset| size|                value|
         +------+-----+---------------------+
-        |     4|    4| Pointer to first IFD|
+        |     0|    4| Pointer to first IFD|
         +------+-----+---------------------+
         """
-        OFFSET = 4
+
+        POINTER = 4
         format_str = self._format(self._pointer_fmt)
 
-        data = await self._read(OFFSET, calcsize(format_str))
+        data = await self._read(POINTER, calcsize(format_str))
         (self._first_ifd_pointer,) = unpack(format_str, data)
 
     async def _read_bigtiff_second_header(self) -> None:
         """
         Second header structure for BigTIFF
+        It's pointer is 4 since the first 4 bystes are for the first header
 
         +------+-----+----------------------------------------------+
         |offset| size|                                         value|
         +------+-----+----------------------------------------------+
-        |     4|    2| Bytesize of IFD pointers (should always be 8)|
+        |     0|    2| Bytesize of IFD pointers (should always be 8)|
         +------+-----+----------------------------------------------+
-        |     6|    2|                                      Always 0|
+        |     2|    2|                                      Always 0|
         +------+-----+----------------------------------------------+
-        |     8|    8|                          Pointer to first IFD|
+        |     4|    8|                          Pointer to first IFD|
         +------+-----+----------------------------------------------+
         """
-        OFFSET = 4
+
+        POINTER = 4
         format_str = self._format("HHQ")
 
-        data = await self._read(OFFSET, calcsize(format_str))
+        data = await self._read(POINTER, calcsize(format_str))
 
         bytesize, placeholder, self._first_ifd_pointer = unpack(format_str, data)
 
@@ -159,7 +190,8 @@ class COGReader:
 
     async def _read_ifd(self, ifd_pointer: int) -> IFD:
         """
-        IFD structure (all offsets are relative to ifd_offset):
+        IFD structure. It's pointer is `ifd_pointer`
+
         +------------+------------+------------------------------------------+
         |      offset|        size|                                     value|
         +------------+------------+------------------------------------------+
@@ -176,6 +208,7 @@ class COGReader:
         |2+n*tag_size|pointer_size|                      Pointer to next IFD |
         +------------+------------+------------------------------------------+
         """
+
         n_format_str = self._format(self._n_fmt)
 
         # Read nubmer of tags in the IFD
@@ -183,19 +216,19 @@ class COGReader:
         (n_tags,) = unpack(n_format_str, n_data)
 
         tags_len = n_tags * calcsize(self._tag_format)
-        ifd_offset = ifd_pointer + calcsize(n_format_str)
-        ifd_format_str = self._format(f"{tags_len}s{self._pointer_fmt}")
+        tags_pointer = ifd_pointer + calcsize(n_format_str)
+        format_str = self._format(f"{tags_len}s{self._pointer_fmt}")
 
         # Read tags data and pointer to next IFD
-        ifd_data = await self._read(ifd_offset, calcsize(ifd_format_str))
+        data = await self._read(tags_pointer, calcsize(format_str))
 
-        tags_data, pointer = unpack(ifd_format_str, ifd_data)
+        tags_data, next_ifd_pointer = unpack(format_str, data)
         tags = self._tags_from_data(n_tags, tags_data)
 
         return IFD(
-            offset=ifd_pointer,
+            pointer=ifd_pointer,
             n_tags=n_tags,
-            next_ifd_pointer=pointer,
+            next_ifd_pointer=next_ifd_pointer,
             tags=tags,
         )
 
@@ -203,6 +236,7 @@ class COGReader:
         """
         Split data into tag-sized buffers and parse them
         """
+
         size = calcsize(self._tag_format)
 
         # Split tag_data into n tag-sized chuncks
@@ -231,14 +265,15 @@ class COGReader:
         |              |            |       if it's size <= pointer_size|
         +--------------+------------+-----------------------------------+
         """
+
         code, tag_type, n_values, pointer = unpack(self._tag_format, tag_data)
 
-        tag = Tag(code=code, type=tag_type, n_values=n_values, pointer=pointer)
+        tag = Tag(code=code, type=tag_type, n_values=n_values, data_pointer=pointer)
 
-        # If tag data type fits into it's pointer size, then last bytes contain
+        # If tag data type fits into it's data pointer size, then last bytes contain
         # data, not it's pointer
         if tag.data_size <= calcsize(self._pointer_fmt):
             tag.data = pack(self._pointer_fmt, pointer)[: tag.data_size]
-            tag.pointer = None
+            tag.data_pointer = None
 
         return tag
