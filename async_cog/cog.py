@@ -56,7 +56,7 @@ class COGReader:
     def _tag_format(self) -> str:
         """
         Return format string for struct.unpack(): two SHORTs and two pointer types.
-        For detailed tag structure see _tag_from_tag_data()
+        For detailed tag structure see _tag_from_tag_bytes()
         """
 
         return self._format(f"2H2{self._pointer_fmt}")
@@ -232,23 +232,23 @@ class COGReader:
             tags=tags,
         )
 
-    def _tags_from_data(self, n_tags: int, tags_data: bytes) -> Iterator[Tag]:
+    def _tags_from_data(self, n_tags: int, tags_bytes: bytes) -> Iterator[Tag]:
         """
         Split data into tag-sized buffers and parse them
         """
 
         size = calcsize(self._tag_format)
 
-        # Split tag_data into n tag-sized chuncks
-        for tag_data in unpack(n_tags * f"{size}s", tags_data):
+        # Split tags_bytes into n tag-sized chuncks
+        for tag_bytes in unpack(n_tags * f"{size}s", tags_bytes):
             try:
-                tag = self._tag_from_tag_data(tag_data)
+                tag = self._tag_from_tag_bytes(tag_bytes)
             except ValueError:
                 continue
 
             yield tag
 
-    def _tag_from_tag_data(self, tag_data: bytes) -> Tag:
+    def _tag_from_tag_bytes(self, tag_bytes: bytes) -> Tag:
         """
         Tag structure
 
@@ -266,7 +266,7 @@ class COGReader:
         +--------------+------------+-----------------------------------+
         """
 
-        code, tag_type, n_values, pointer = unpack(self._tag_format, tag_data)
+        code, tag_type, n_values, pointer = unpack(self._tag_format, tag_bytes)
 
         tag = Tag(code=code, type=tag_type, n_values=n_values, data_pointer=pointer)
 
@@ -277,3 +277,9 @@ class COGReader:
             tag.data_pointer = None
 
         return tag
+
+    async def _fill_tag_with_data(self, tag: Tag) -> None:
+        if not tag.data_pointer:
+            return
+
+        tag.data = await self._read(tag.data_pointer, tag.data_size)
