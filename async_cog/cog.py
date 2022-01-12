@@ -277,3 +277,9 @@ class COGReader:
             tag.data_pointer = None
 
         return tag
+
+    async def _fill_tag_with_data(self, tag: Tag) -> None:
+        if not tag.data_pointer:
+            return
+
+        tag.data = await self._read(tag.data_pointer, tag.data_size)

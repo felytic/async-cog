@@ -474,6 +474,23 @@ async def test_read_ifds_big_tiff() -> None:
     ]
 
 
+@pytest.mark.asyncio
+async def test_fill_tag_data() -> None:
+    url = "BigTIFF.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            tag = Tag(code=258, type=3, n_values=3, data_pointer=170)
+            await reader._fill_tag_with_data(tag)
+            assert tag.data == b"\x00\x00\x00\x00\x00\x00"
+
+            filled_tag = Tag(code=259, type=3, n_values=1, data=b"\x01\x00")
+            await reader._fill_tag_with_data(filled_tag)
+            assert filled_tag == Tag(code=259, type=3, n_values=1, data=b"\x01\x00")
+
+
 def test_tag_format() -> None:
     tag = Tag(code=254, type=4, n_values=13)
     assert tag.format == "13I"
