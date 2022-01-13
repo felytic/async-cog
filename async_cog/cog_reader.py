@@ -6,7 +6,8 @@ from typing import Any, Iterator, List, Literal
 
 from aiohttp import ClientSession
 
-from async_cog.ifd import IFD, Tag
+from async_cog.ifd import IFD
+from async_cog.tag import Tag
 
 
 class COGReader:
