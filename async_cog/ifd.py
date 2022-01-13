@@ -1,5 +1,5 @@
 from struct import calcsize
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, validator
 
@@ -10,6 +10,7 @@ class Tag(BaseModel):
     n_values: int
     data_pointer: Optional[int]
     data: Optional[bytes]
+    values: Optional[List[Any]]
 
     @validator("type")
     def validate_type(cls, type_code: int) -> int:
@@ -19,16 +20,16 @@ class Tag(BaseModel):
         return type_code
 
     @property
-    def format(self) -> str:
+    def format_str(self) -> str:
         return f"{self.n_values}{TAG_TYPES[self.type]}"
 
     @property
     def data_size(self) -> int:
-        return calcsize(self.format)
+        return calcsize(self.format_str)
 
     @property
     def name(self) -> str:
-        return TAG_NAMES.get(self.code, "UNKNOWN")
+        return TAG_NAMES.get(self.code, f"UNKNOWN TAG {self.code}")
 
 
 class IFD(BaseModel):
@@ -44,14 +45,14 @@ TAG_TYPES = {
     2: "c",  # ASCII
     3: "H",  # SHORT
     4: "I",  # LONG
-    # FIXME In TIFF format, a RATIONAL value is a fractional value
+    # In TIFF format, a RATIONAL value is a fractional value
     # represented by the ratio of two unsigned 4-byte integers.
     5: "Q",  # RATIONAL
     6: "b",  # SBYTE
-    7: "c",  # UNDEFINED
+    7: "s",  # UNDEFINED
     8: "h",  # SSHORT
     9: "i",  # SLONG
-    # FIXME same for signed RATIONAL
+    # same for signed RATIONAL
     10: "q",  # SRATIONAL
     11: "f",  # FLOAT
     12: "d",  # DOUBLE

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from fractions import Fraction
 from struct import calcsize, pack, unpack
 from typing import Any, Iterator, List, Literal
 
@@ -279,7 +280,23 @@ class COGReader:
         return tag
 
     async def _fill_tag_with_data(self, tag: Tag) -> None:
-        if not tag.data_pointer:
+        if tag.data_pointer:
+            tag.data = await self._read(tag.data_pointer, tag.data_size)
+
+        if tag.data is None:
             return
 
-        tag.data = await self._read(tag.data_pointer, tag.data_size)
+        if tag.type not in (5, 10):  # See the problem with RATIONAL in TAG_TYPES
+            tag.values = list(unpack(self._format(tag.format_str), tag.data))
+
+        else:  # two unsigned LONGs:  numerator and denominator
+            type_str = "I" if tag.type == 5 else "i"
+            format_str = self._format(f"{tag.n_values * 2}{type_str}")
+            values = unpack(format_str, tag.data)
+            numerators = values[::2]
+            denominators = values[1::2]
+
+            tag.values = [
+                Fraction(numerator, denominator)
+                for numerator, denominator in zip(numerators, denominators)
+            ]
