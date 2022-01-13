@@ -1,4 +1,5 @@
 # Thanks to mapbox/COGDumper for the mock data
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -6,7 +7,8 @@ import pytest
 from aioresponses import CallbackResult, aioresponses
 
 from async_cog import COGReader
-from async_cog.ifd import IFD, Tag
+from async_cog.ifd import IFD
+from async_cog.tag import Tag
 
 
 def test_constructor() -> None:
@@ -488,12 +490,37 @@ async def test_fill_tag_data() -> None:
 
             filled_tag = Tag(code=259, type=3, n_values=1, data=b"\x01\x00")
             await reader._fill_tag_with_data(filled_tag)
-            assert filled_tag == Tag(code=259, type=3, n_values=1, data=b"\x01\x00")
+            assert filled_tag == Tag(
+                code=259, type=3, n_values=1, data=b"\x01\x00", values=[1]
+            )
+
+            tag_without_data = Tag(code=259, type=3, n_values=1)
+            await reader._fill_tag_with_data(tag_without_data)
+
+
+@pytest.mark.asyncio
+async def test_tag_fractional() -> None:
+    url = "be_cog.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            tag = reader._ifds[0].tags[14]
+            await reader._fill_tag_with_data(tag)
+            assert tag.values == [
+                Fraction(0, 1),
+                Fraction(255, 1),
+                Fraction(128, 1),
+                Fraction(255, 1),
+                Fraction(128, 1),
+                Fraction(255, 1),
+            ]
 
 
 def test_tag_format() -> None:
     tag = Tag(code=254, type=4, n_values=13)
-    assert tag.format == "13I"
+    assert tag.format_str == "13I"
     assert tag.data_pointer is None
 
 
