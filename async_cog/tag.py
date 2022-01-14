@@ -12,6 +12,14 @@ class Tag(BaseModel):
     data: Optional[bytes]
     values: Optional[List[Any]]
 
+    def __str__(self) -> str:
+        if self.values:
+            if len(self.values) == 1:
+                return f"{self.name}: {self.values[0]}"
+            return f"{self.name}: {self.values}"
+
+        return f"{self.name}: {str(self.data)}"
+
     @validator("type")
     def validate_type(cls, type_code: int) -> int:
         if type_code not in TAG_TYPES:
