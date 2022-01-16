@@ -1,5 +1,5 @@
 from struct import calcsize
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 from pydantic import BaseModel, validator
 
@@ -13,12 +13,7 @@ class Tag(BaseModel):
     values: Optional[List[Any]]
 
     def __str__(self) -> str:
-        if self.values:
-            if len(self.values) == 1:
-                return f"{self.name}: {self.values[0]}"
-            return f"{self.name}: {self.values}"
-
-        return f"{self.name}: {str(self.data)}"
+        return f"{self.name}: {str(self.value)}"
 
     @validator("type")
     def validate_type(cls, type_code: int) -> int:
@@ -38,6 +33,15 @@ class Tag(BaseModel):
     @property
     def name(self) -> str:
         return TAG_NAMES.get(self.code, f"UNKNOWN TAG {self.code}")
+
+    @property
+    def value(self) -> Union[Any, List[Any]]:
+        if self.values:
+            if len(self.values) == 1:
+                return self.values[0]
+            return self.values
+
+        return self.data
 
 
 # https://docs.python.org/3/library/struct.html#format-characters

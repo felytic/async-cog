@@ -543,3 +543,30 @@ def test_tag_str() -> None:
 
     tag = Tag(code=258, type=3, n_values=32, values=[8, 8, 8])
     assert str(tag) == "BitsPerSample: [8, 8, 8]"
+
+
+@pytest.mark.asyncio
+async def test_ifd_to_dict() -> None:
+    url = "cog.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            ifd = reader._ifds[0]
+            for tag in ifd.tags:
+                await reader._fill_tag_with_data(tag)
+
+            assert ifd.to_dict() == {
+                "BitsPerSample": [8, 8, 8],
+                "Compression": 7,
+                "ImageLength": 64,
+                "ImageWidth": 64,
+                "PlanarConfiguration": 1,
+                "SampleFormat": [1, 1, 1],
+                "SamplesPerPixel": 3,
+                "TileByteCounts": 4027,
+                "TileLength": 256,
+                "TileOffsets": 255,
+                "TileWidth": 256,
+            }
