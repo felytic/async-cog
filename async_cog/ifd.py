@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, Dict, List
 
 from pydantic import BaseModel
 
@@ -10,3 +10,8 @@ class IFD(BaseModel):
     n_tags: int
     next_ifd_pointer: int
     tags: List[Tag]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            tag.name: tag.value for tag in self.tags if not isinstance(tag.value, bytes)
+        }
