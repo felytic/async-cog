@@ -570,3 +570,16 @@ async def test_ifd_to_dict() -> None:
                 "TileOffsets": 255,
                 "TileWidth": 256,
             }
+
+
+@pytest.mark.asyncio
+async def test_tag_ascii() -> None:
+    url = "be_cog.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            tag = reader._ifds[1].tags[0]
+            await reader._fill_tag_with_data(tag)
+            assert tag.value == "test"

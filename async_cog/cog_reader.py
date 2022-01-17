@@ -287,11 +287,11 @@ class COGReader:
         if tag.data is None:
             return
 
-        if tag.type not in (5, 10):  # See the problem with RATIONAL in TAG_TYPES
-            tag.values = list(unpack(self._format(tag.format_str), tag.data))
-
-        else:  # two unsigned LONGs:  numerator and denominator
+        # See the problem with RATIONAL in TAG_TYPES
+        if tag.type in (5, 10):
             type_str = "I" if tag.type == 5 else "i"
+
+            # two unsigned LONGs:  numerator and denominator
             format_str = self._format(f"{tag.n_values * 2}{type_str}")
             values = unpack(format_str, tag.data)
             numerators = values[::2]
@@ -301,3 +301,10 @@ class COGReader:
                 Fraction(numerator, denominator)
                 for numerator, denominator in zip(numerators, denominators)
             ]
+
+        elif tag.type == 2:  # ASCII string
+            (bytes_str,) = unpack(self._format(tag.format_str), tag.data)
+            tag.values = bytes_str.decode().split("|")
+
+        else:
+            tag.values = list(unpack(self._format(tag.format_str), tag.data))

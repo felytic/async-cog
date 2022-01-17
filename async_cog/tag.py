@@ -47,7 +47,7 @@ class Tag(BaseModel):
 # https://docs.python.org/3/library/struct.html#format-characters
 TAG_TYPES = {
     1: "B",  # BYTE
-    2: "c",  # ASCII
+    2: "s",  # ASCII
     3: "H",  # SHORT
     4: "I",  # LONG
     # In TIFF format, a RATIONAL value is a fractional value
