@@ -6,6 +6,7 @@ from typing import Any, Iterator, List, Literal
 
 from aiohttp import ClientSession
 
+from async_cog.geo_key import GeoKey
 from async_cog.ifd import IFD
 from async_cog.tag import Tag
 
@@ -280,6 +281,26 @@ class COGReader:
 
         return tag
 
+    def _parse_geokeys(self, tag: Tag) -> None:
+        if tag.values and len(tag.values) >= 4:
+            version, _, _, keys_n = tag.values[:4]
+            assert version == 1
+
+            geo_keys = []
+
+            for i in range(1, keys_n + 1):
+                code, tag_location, count, value = tag.values[4 * i : 4 * (i + 1)]
+                geo_key = GeoKey(
+                    code=code,
+                    tag_location=tag_location,
+                    count=count,
+                    value=value,
+                )
+
+                geo_keys.append(geo_key)
+
+            tag.values = geo_keys
+
     async def _fill_tag_with_data(self, tag: Tag) -> None:
         if tag.data_pointer:
             tag.data = await self._read(tag.data_pointer, tag.data_size)
@@ -308,3 +329,6 @@ class COGReader:
 
         else:
             tag.values = list(unpack(self._format(tag.format_str), tag.data))
+
+        if tag.name == "GeoKeyDirectoryTag":
+            self._parse_geokeys(tag)

@@ -7,6 +7,7 @@ import pytest
 from aioresponses import CallbackResult, aioresponses
 
 from async_cog import COGReader
+from async_cog.geo_key import GeoKey
 from async_cog.ifd import IFD
 from async_cog.tag import Tag
 
@@ -232,7 +233,7 @@ async def test_read_ifds() -> None:
                 IFD(
                     pointer=5062,
                     n_tags=14,
-                    next_ifd_pointer=0,
+                    next_ifd_pointer=10833,
                     tags=[
                         Tag(
                             code=254,
@@ -258,6 +259,14 @@ async def test_read_ifds() -> None:
                         ),
                         Tag(code=339, type=3, n_values=3, data_pointer=5242),
                         Tag(code=347, type=7, n_values=73, data_pointer=5248),
+                    ],
+                ),
+                IFD(
+                    pointer=10833,
+                    n_tags=1,
+                    next_ifd_pointer=0,
+                    tags=[
+                        Tag(code=34735, type=3, n_values=32, data_pointer=10851),
                     ],
                 ),
             ]
@@ -518,33 +527,6 @@ async def test_tag_fractional() -> None:
             ]
 
 
-def test_tag_format() -> None:
-    tag = Tag(code=254, type=4, n_values=13)
-    assert tag.format_str == "13I"
-    assert tag.data_pointer is None
-
-
-def test_tag_size() -> None:
-    tag = Tag(code=254, type=4, n_values=13)
-    assert tag.data_size == 52
-
-
-def test_tag_name() -> None:
-    tag = Tag(code=34735, type=3, n_values=32, data_pointer=502)
-    assert tag.name == "GeoKeyDirectoryTag"
-
-
-def test_tag_str() -> None:
-    tag = Tag(code=34735, type=3, n_values=32, data_pointer=502)
-    assert str(tag) == "GeoKeyDirectoryTag: None"
-
-    tag = Tag(code=257, type=3, n_values=32, values=[256])
-    assert str(tag) == "ImageLength: 256"
-
-    tag = Tag(code=258, type=3, n_values=32, values=[8, 8, 8])
-    assert str(tag) == "BitsPerSample: [8, 8, 8]"
-
-
 @pytest.mark.asyncio
 async def test_ifd_to_dict() -> None:
     url = "cog.tif"
@@ -583,3 +565,25 @@ async def test_tag_ascii() -> None:
             tag = reader._ifds[1].tags[0]
             await reader._fill_tag_with_data(tag)
             assert tag.value == "test"
+
+
+@pytest.mark.asyncio
+async def test_parse_geokeys() -> None:
+    url = "cog.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            tag = reader._ifds[5].tags[0]
+            await reader._fill_tag_with_data(tag)
+            assert tag.name == "GeoKeyDirectoryTag"
+            assert tag.value == [
+                GeoKey(code=1024, tag_location=0, count=1, value=1),
+                GeoKey(code=1025, tag_location=0, count=1, value=1),
+                GeoKey(code=1026, tag_location=34737, count=25, value=0),
+                GeoKey(code=2049, tag_location=34737, count=7, value=25),
+                GeoKey(code=2054, tag_location=0, count=1, value=9102),
+                GeoKey(code=3072, tag_location=0, count=1, value=3857),
+                GeoKey(code=3076, tag_location=0, count=4096, value=37378),
+            ]
