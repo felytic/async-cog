@@ -1,7 +1,10 @@
-from struct import calcsize
-from typing import Any, List, Optional, Union
+from fractions import Fraction
+from struct import calcsize, unpack
+from typing import Any, List, Literal, Optional, Union
 
 from pydantic import BaseModel, validator
+
+from async_cog.geo_key import GeoKey
 
 
 class Tag(BaseModel):
@@ -42,6 +45,65 @@ class Tag(BaseModel):
             return self.values
 
         return self.data
+
+    def parse_data(self, byte_order_fmt: Literal["<", ">"]) -> None:
+        if self.type in (5, 10):  # RATIONAL and SIGNED RATIONAL
+            self._parse_rationals(byte_order_fmt)
+
+        elif self.type == 2:  # ASCII string
+            self._parse_ascii(byte_order_fmt)
+
+        else:
+            self._parse(byte_order_fmt)
+
+        if self.name == "GeoKeyDirectoryTag":
+            self._parse_geokeys()
+
+    def _parse(self, byte_order_fmt: Literal["<", ">"]) -> None:
+        assert self.data
+        self.values = list(unpack(f"{byte_order_fmt}{self.format_str}", self.data))
+
+    def _parse_rationals(self, byte_order_fmt: Literal["<", ">"]) -> None:
+        assert self.data
+        type_str = "I" if self.type == 5 else "i"
+
+        # two unsigned LONGs:  numerator and denominator
+        format_str = f"{byte_order_fmt}{self.n_values * 2}{type_str}"
+        values = unpack(format_str, self.data)
+        numerators = values[::2]
+        denominators = values[1::2]
+
+        self.values = [
+            Fraction(numerator, denominator)
+            for numerator, denominator in zip(numerators, denominators)
+        ]
+
+    def _parse_ascii(self, byte_order_fmt: Literal["<", ">"]) -> None:
+        assert self.data
+
+        format_str = f"{byte_order_fmt}{self.format_str}"
+        (bytes_str,) = unpack(format_str, self.data)
+        self.values = bytes_str.decode().split("|")
+
+    def _parse_geokeys(self) -> None:
+        if self.values and len(self.values) >= 4:
+            version, _, _, keys_n = self.values[:4]
+            assert version == 1
+
+            geo_keys = []
+
+            for i in range(1, keys_n + 1):
+                code, tag_location, count, value = self.values[4 * i : 4 * (i + 1)]
+                geo_key = GeoKey(
+                    code=code,
+                    tag_location=tag_location,
+                    count=count,
+                    value=value,
+                )
+
+                geo_keys.append(geo_key)
+
+            self.values = geo_keys
 
 
 # https://docs.python.org/3/library/struct.html#format-characters

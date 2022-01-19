@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from fractions import Fraction
 from struct import calcsize, pack, unpack
 from typing import Any, Iterator, List, Literal
 
 from aiohttp import ClientSession
 
-from async_cog.geo_key import GeoKey
 from async_cog.ifd import IFD
 from async_cog.tag import Tag
 
@@ -281,26 +279,6 @@ class COGReader:
 
         return tag
 
-    def _parse_geokeys(self, tag: Tag) -> None:
-        if tag.values and len(tag.values) >= 4:
-            version, _, _, keys_n = tag.values[:4]
-            assert version == 1
-
-            geo_keys = []
-
-            for i in range(1, keys_n + 1):
-                code, tag_location, count, value = tag.values[4 * i : 4 * (i + 1)]
-                geo_key = GeoKey(
-                    code=code,
-                    tag_location=tag_location,
-                    count=count,
-                    value=value,
-                )
-
-                geo_keys.append(geo_key)
-
-            tag.values = geo_keys
-
     async def _fill_tag_with_data(self, tag: Tag) -> None:
         if tag.data_pointer:
             tag.data = await self._read(tag.data_pointer, tag.data_size)
@@ -308,27 +286,4 @@ class COGReader:
         if tag.data is None:
             return
 
-        # See the problem with RATIONAL in TAG_TYPES
-        if tag.type in (5, 10):
-            type_str = "I" if tag.type == 5 else "i"
-
-            # two unsigned LONGs:  numerator and denominator
-            format_str = self._format(f"{tag.n_values * 2}{type_str}")
-            values = unpack(format_str, tag.data)
-            numerators = values[::2]
-            denominators = values[1::2]
-
-            tag.values = [
-                Fraction(numerator, denominator)
-                for numerator, denominator in zip(numerators, denominators)
-            ]
-
-        elif tag.type == 2:  # ASCII string
-            (bytes_str,) = unpack(self._format(tag.format_str), tag.data)
-            tag.values = bytes_str.decode().split("|")
-
-        else:
-            tag.values = list(unpack(self._format(tag.format_str), tag.data))
-
-        if tag.name == "GeoKeyDirectoryTag":
-            self._parse_geokeys(tag)
+        tag.parse_data(self._byte_order_fmt)
