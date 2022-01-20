@@ -1,6 +1,6 @@
 from fractions import Fraction
 from struct import calcsize, unpack
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, validator
 
@@ -13,7 +13,7 @@ class Tag(BaseModel):
     n_values: int
     data_pointer: Optional[int]
     data: Optional[bytes]
-    values: Optional[List[Any]]
+    values: Optional[Any]
 
     def __str__(self) -> str:
         return f"{self.name}: {str(self.value)}"
@@ -38,7 +38,7 @@ class Tag(BaseModel):
         return TAG_NAMES.get(self.code, f"UNKNOWN TAG {self.code}")
 
     @property
-    def value(self) -> Union[Any, List[Any]]:
+    def value(self) -> Any:
         if self.values:
             if len(self.values) == 1:
                 return self.values[0]

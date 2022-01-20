@@ -230,7 +230,7 @@ class COGReader:
             pointer=ifd_pointer,
             n_tags=n_tags,
             next_ifd_pointer=next_ifd_pointer,
-            tags=tags,
+            tags={tag.name: tag for tag in tags},
         )
 
     def _tags_from_data(self, n_tags: int, tags_bytes: bytes) -> Iterator[Tag]:
@@ -290,5 +290,5 @@ class COGReader:
 
     async def _fill_tags_with_data(self) -> None:
         for ifd in self._ifds:
-            for tag in ifd.tags:
+            for tag in ifd.tags.values():
                 await self._fill_tag_with_data(tag)
