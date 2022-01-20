@@ -535,11 +535,9 @@ async def test_ifd_to_dict() -> None:
         mocked_response.get(url, callback=response_read, repeat=True)
 
         async with COGReader(url) as reader:
-            ifd = reader._ifds[0]
-            for tag in ifd.tags:
-                await reader._fill_tag_with_data(tag)
+            await reader._fill_tags_with_data()
 
-            assert ifd.to_dict() == {
+            assert reader._ifds[0].to_dict() == {
                 "BitsPerSample": [8, 8, 8],
                 "Compression": 7,
                 "ImageLength": 64,

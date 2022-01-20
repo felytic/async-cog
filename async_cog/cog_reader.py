@@ -287,3 +287,8 @@ class COGReader:
             return
 
         tag.parse_data(self._byte_order_fmt)
+
+    async def _fill_tags_with_data(self) -> None:
+        for ifd in self._ifds:
+            for tag in ifd.tags:
+                await self._fill_tag_with_data(tag)
