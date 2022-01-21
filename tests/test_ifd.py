@@ -32,17 +32,21 @@ async def test_ifd_to_dict() -> None:
 
 
 @pytest.mark.asyncio
-async def test_ifd_get_and_set_item() -> None:
+async def test_ifd_dict_methods() -> None:
     url = "cog.tif"
 
     with aioresponses() as mocked_response:
         mocked_response.get(url, callback=response_read, repeat=True)
 
         async with COGReader(url) as reader:
-            assert reader._ifds[0]["SamplesPerPixel"] == b"\x03\x00"
+            ifd = reader._ifds[0]
+            assert ifd["SamplesPerPixel"] == b"\x03\x00"
 
             tag = Tag(code=34735, type=3, n_values=32, data_pointer=10851)
-            reader._ifds[0]["GeoKeyDirectoryTag"] = tag
+            ifd["GeoKeyDirectoryTag"] = tag
 
         with pytest.raises(AssertionError):
-            reader._ifds[0]["Wrong name"] = tag
+            ifd["Wrong name"] = tag
+
+        assert "ImageWidth" in ifd
+        assert "Wrong key" not in ifd

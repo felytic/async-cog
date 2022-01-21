@@ -24,3 +24,6 @@ class IFD(BaseModel):
     def __setitem__(self, key: str, tag: Tag) -> None:
         assert tag.name == key
         self.tags[key] = tag
+
+    def __contains__(self, key: str) -> bool:
+        return key in self.tags
