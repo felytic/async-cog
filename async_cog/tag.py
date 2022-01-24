@@ -50,9 +50,6 @@ class Tag(BaseModel):
         if self.type in (5, 10):  # RATIONAL and SIGNED RATIONAL
             self._parse_rationals(byte_order_fmt)
 
-        elif self.type == 2:  # ASCII string
-            self._parse_ascii(byte_order_fmt)
-
         else:
             self._parse(byte_order_fmt)
 
@@ -78,13 +75,6 @@ class Tag(BaseModel):
             for numerator, denominator in zip(numerators, denominators)
         ]
 
-    def _parse_ascii(self, byte_order_fmt: Literal["<", ">"]) -> None:
-        assert self.data
-
-        format_str = f"{byte_order_fmt}{self.format_str}"
-        (bytes_str,) = unpack(format_str, self.data)
-        self.values = bytes_str.decode().split("|")
-
     def _parse_geokeys(self) -> None:
         if self.values and len(self.values) >= 4:
             version, _, _, keys_n = self.values[:4]
@@ -94,11 +84,18 @@ class Tag(BaseModel):
 
             for i in range(1, keys_n + 1):
                 code, tag_location, count, value = self.values[4 * i : 4 * (i + 1)]
+                value_offset = None
+
+                if tag_location != 0:
+                    value_offset = value
+                    value = None
+
                 geo_key = GeoKey(
                     code=code,
                     tag_location=tag_location,
                     count=count,
                     value=value,
+                    value_offset=value_offset,
                 )
 
                 geo_keys.append(geo_key)

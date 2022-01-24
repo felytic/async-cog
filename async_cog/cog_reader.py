@@ -6,7 +6,7 @@ from typing import Any, Iterator, List, Literal
 from aiohttp import ClientSession
 
 from async_cog.ifd import IFD
-from async_cog.tag import Tag
+from async_cog.tag import TAG_NAMES, Tag
 
 
 class COGReader:
@@ -292,3 +292,15 @@ class COGReader:
         for ifd in self._ifds:
             for tag in ifd.tags.values():
                 await self._fill_tag_with_data(tag)
+
+            if "GeoKeyDirectoryTag" in ifd:
+                value = ifd["GeoKeyDirectoryTag"]
+
+                for geo_key in value:
+                    if geo_key.tag_location != 0:
+                        tag_name = TAG_NAMES[geo_key.tag_location]
+                        tag_value = ifd[tag_name]
+
+                        start = geo_key.value_offset
+                        end = geo_key.value_offset + geo_key.count - 1
+                        geo_key.value = tag_value[start:end]

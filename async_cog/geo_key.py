@@ -1,3 +1,5 @@
+from typing import Any, Optional
+
 from pydantic import BaseModel
 
 
@@ -5,7 +7,8 @@ class GeoKey(BaseModel):
     code: int
     tag_location: int
     count: int
-    value: int
+    value: Optional[Any]
+    value_offset: Optional[int]
 
     def __str__(self) -> str:
         return f"{self.name}: {str(self.value)}"
