@@ -5,10 +5,10 @@ from pydantic import BaseModel
 
 class GeoKey(BaseModel):
     code: int
-    tag_location: int
-    count: int
+    tag_code: int
+    length: int
     value: Optional[Any]
-    value_offset: Optional[int]
+    offset: Optional[int]
 
     def __str__(self) -> str:
         return f"{self.name}: {str(self.value)}"

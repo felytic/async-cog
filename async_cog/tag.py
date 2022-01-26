@@ -40,13 +40,20 @@ class Tag(BaseModel):
     @property
     def value(self) -> Any:
         if self.values:
-            if len(self.values) == 1:
+            if len(self.values) == 1 and self.name != "GeoDoubleParamsTag":
                 return self.values[0]
             return self.values
 
         return self.data
 
     def parse_data(self, byte_order_fmt: Literal["<", ">"]) -> None:
+        """
+        Parse binary self.data and store values into self.values
+        """
+
+        if self.data is None:
+            return
+
         if self.type in (5, 10):  # RATIONAL and SIGNED RATIONAL
             self._parse_rationals(byte_order_fmt)
 
@@ -57,18 +64,29 @@ class Tag(BaseModel):
             self._parse_geokeys()
 
     def _parse(self, byte_order_fmt: Literal["<", ">"]) -> None:
+        """
+        Parse values from binary self.data according to self.format_str
+        """
+
         assert self.data
         self.values = list(unpack(f"{byte_order_fmt}{self.format_str}", self.data))
 
     def _parse_rationals(self, byte_order_fmt: Literal["<", ">"]) -> None:
+        """
+        Each rational in TIFF represented by two LONGs: numerator and denominator.
+        Parse them into list of Fractions
+        """
+
         assert self.data
+        # "I" is for unsigned LONGs and "i" for signed
         type_str = "I" if self.type == 5 else "i"
 
-        # two unsigned LONGs:  numerator and denominator
+        # 2 * n values of type (un)signed LONG
         format_str = f"{byte_order_fmt}{self.n_values * 2}{type_str}"
         values = unpack(format_str, self.data)
-        numerators = values[::2]
-        denominators = values[1::2]
+
+        numerators = values[::2]  # evens
+        denominators = values[1::2]  # odds
 
         self.values = [
             Fraction(numerator, denominator)
@@ -76,6 +94,22 @@ class Tag(BaseModel):
         ]
 
     def _parse_geokeys(self) -> None:
+        """
+        GeoKey structure (array of size 4 * n):
+        +---------+-------------+----------------+--------+
+        | version |    revision | minor_revision | keys_n |
+        +---------+-------------+----------------+--------+
+        |   . . . |       . . . |          . . . |  . . . |
+        +---------+-------------+----------------+--------+
+        |    code |    tag_code |         length |  value |
+        +---------+-------------+----------------+--------+
+        |   . . . |       . . . |          . . . |  . . . |
+        +---------+-------------+----------------+--------+
+
+        If tag_code != 0 then values are in tag with "tag_code" code on position "value"
+
+        svn.osgeo.org/metacrs/geotiff/trunk/geotiff/html/usgs_geotiff.html#hdr%2023
+        """
         if self.values and len(self.values) >= 4:
             version, _, _, keys_n = self.values[:4]
             assert version == 1
@@ -83,19 +117,19 @@ class Tag(BaseModel):
             geo_keys = []
 
             for i in range(1, keys_n + 1):
-                code, tag_location, count, value = self.values[4 * i : 4 * (i + 1)]
-                value_offset = None
+                code, tag_code, length, value = self.values[4 * i : 4 * (i + 1)]
+                offset = None
 
-                if tag_location != 0:
-                    value_offset = value
+                if tag_code != 0:
+                    offset = value
                     value = None
 
                 geo_key = GeoKey(
                     code=code,
-                    tag_location=tag_location,
-                    count=count,
+                    tag_code=tag_code,
+                    length=length,
                     value=value,
-                    value_offset=value_offset,
+                    offset=offset,
                 )
 
                 geo_keys.append(geo_key)

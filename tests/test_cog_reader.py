@@ -191,10 +191,13 @@ async def test_read_ifds() -> None:
         },
         {
             "GeoKeyDirectoryTag": Tag(
-                code=34735, type=3, n_values=32, data_pointer=10863
+                code=34735, type=3, n_values=32, data_pointer=10875
             ),
             "GeoAsciiParamsTag": Tag(
-                code=34737, type=2, n_values=33, data_pointer=10927
+                code=34737, type=2, n_values=33, data_pointer=10939
+            ),
+            "GeoDoubleParamsTag": Tag(
+                code=34736, type=12, n_values=1, data_pointer=10972
             ),
         },
     ]
@@ -211,7 +214,7 @@ async def test_read_ifds() -> None:
                 IFD(pointer=4542, n_tags=14, next_ifd_pointer=4802, tags=tags[2]),
                 IFD(pointer=4802, n_tags=14, next_ifd_pointer=5062, tags=tags[3]),
                 IFD(pointer=5062, n_tags=14, next_ifd_pointer=10833, tags=tags[4]),
-                IFD(pointer=10833, n_tags=2, next_ifd_pointer=0, tags=tags[5]),
+                IFD(pointer=10833, n_tags=3, next_ifd_pointer=0, tags=tags[5]),
             ]
 
 
@@ -439,36 +442,34 @@ async def test_parse_geokeys() -> None:
         mocked_response.get(url, callback=response_read, repeat=True)
 
         async with COGReader(url) as reader:
-            tag = reader._ifds[5].tags["GeoKeyDirectoryTag"]
-            await reader._fill_tags_with_data()
+            ifd = reader._ifds[5]
+
+            tag = ifd.tags["GeoKeyDirectoryTag"]
+            await reader._fill_ifd_with_data(ifd)
             assert tag.value == [
-                GeoKey(code=1024, tag_location=0, count=1, value=1, value_offset=None),
-                GeoKey(code=1025, tag_location=0, count=1, value=1, value_offset=None),
+                GeoKey(code=1024, tag_code=0, length=1, value=1),
+                GeoKey(code=1025, tag_code=0, length=1, value=1),
                 GeoKey(
                     code=1026,
-                    tag_location=34737,
-                    count=25,
+                    tag_code=34737,
+                    length=25,
                     value=b"WGS 84 / Pseudo-Mercator",
-                    value_offset=0,
+                    offset=0,
                 ),
                 GeoKey(
                     code=2049,
-                    tag_location=34737,
-                    count=7,
+                    tag_code=34737,
+                    length=7,
                     value=b"WGS 84",
-                    value_offset=25,
+                    offset=25,
                 ),
                 GeoKey(
-                    code=2054, tag_location=0, count=1, value=9102, value_offset=None
+                    code=2051,
+                    tag_code=34736,
+                    length=1,
+                    value=1.3,
+                    offset=0,
                 ),
-                GeoKey(
-                    code=3072, tag_location=0, count=1, value=3857, value_offset=None
-                ),
-                GeoKey(
-                    code=3076,
-                    tag_location=0,
-                    count=4096,
-                    value=37378,
-                    value_offset=None,
-                ),
+                GeoKey(code=3072, tag_code=0, length=1, value=3857),
+                GeoKey(code=3076, tag_code=0, length=1, value=37378),
             ]

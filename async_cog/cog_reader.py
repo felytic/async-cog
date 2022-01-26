@@ -6,7 +6,7 @@ from typing import Any, Iterator, List, Literal
 from aiohttp import ClientSession
 
 from async_cog.ifd import IFD
-from async_cog.tag import TAG_NAMES, Tag
+from async_cog.tag import Tag
 
 
 class COGReader:
@@ -198,7 +198,7 @@ class COGReader:
         +------------+------------+------------------------------------------+
         |           0|  ifd_n_size|                 n — number of tags in IFD|
         +------------+------------+------------------------------------------+
-        |           2|    tag_size|                                Tag 0 data|
+        |  ifd_n_size|    tag_size|                                Tag 0 data|
         +------------+------------+------------------------------------------+
         |         ...|         ...|                                       ...|
         +------------+------------+------------------------------------------+
@@ -280,27 +280,22 @@ class COGReader:
         return tag
 
     async def _fill_tag_with_data(self, tag: Tag) -> None:
+        """
+        Read tag-related data from specific place in the file.
+        And parse values from it according to tag's format
+        """
+
         if tag.data_pointer:
             tag.data = await self._read(tag.data_pointer, tag.data_size)
 
-        if tag.data is None:
-            return
-
         tag.parse_data(self._byte_order_fmt)
 
-    async def _fill_tags_with_data(self) -> None:
-        for ifd in self._ifds:
-            for tag in ifd.tags.values():
-                await self._fill_tag_with_data(tag)
+    async def _fill_ifd_with_data(self, ifd: IFD) -> None:
+        """
+        Read data for all tags within IFD. Parse GeoKeys tags
+        """
 
-            if "GeoKeyDirectoryTag" in ifd:
-                value = ifd["GeoKeyDirectoryTag"]
+        for tag in ifd.tags.values():
+            await self._fill_tag_with_data(tag)
 
-                for geo_key in value:
-                    if geo_key.tag_location != 0:
-                        tag_name = TAG_NAMES[geo_key.tag_location]
-                        tag_value = ifd[tag_name]
-
-                        start = geo_key.value_offset
-                        end = geo_key.value_offset + geo_key.count - 1
-                        geo_key.value = tag_value[start:end]
+        ifd.parse_geokeys()

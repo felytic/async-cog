@@ -14,7 +14,7 @@ async def test_ifd_to_dict() -> None:
         mocked_response.get(url, callback=response_read, repeat=True)
 
         async with COGReader(url) as reader:
-            await reader._fill_tags_with_data()
+            await reader._fill_ifd_with_data(reader._ifds[0])
 
             assert reader._ifds[0].to_dict() == {
                 "BitsPerSample": [8, 8, 8],
