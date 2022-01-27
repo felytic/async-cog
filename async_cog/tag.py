@@ -42,6 +42,10 @@ class Tag(BaseModel):
         if self.values:
             if len(self.values) == 1 and self.name != "GeoDoubleParamsTag":
                 return self.values[0]
+
+            if self.name == "GeoKeyDirectoryTag":
+                return {item.name: item.value for item in self.values}
+
             return self.values
 
         return self.data
@@ -54,7 +58,10 @@ class Tag(BaseModel):
         if self.data is None:
             return
 
-        if self.type in (5, 10):  # RATIONAL and SIGNED RATIONAL
+        if self.type == 2:  # ASCII string
+            self.values = self.data.decode()
+
+        elif self.type in (5, 10):  # RATIONAL and SIGNED RATIONAL
             self._parse_rationals(byte_order_fmt)
 
         else:
