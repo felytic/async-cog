@@ -7,7 +7,6 @@ import pytest
 from aioresponses import CallbackResult, aioresponses
 
 from async_cog import COGReader
-from async_cog.geo_key import GeoKey
 from async_cog.ifd import IFD
 from async_cog.tag import Tag
 
@@ -431,7 +430,7 @@ async def test_tag_ascii() -> None:
         async with COGReader(url) as reader:
             tag = reader._ifds[1].tags["NewSubfileType"]
             await reader._fill_tag_with_data(tag)
-            assert tag.value == b"test"
+            assert tag.value == "test"
 
 
 @pytest.mark.asyncio
@@ -446,30 +445,12 @@ async def test_parse_geokeys() -> None:
 
             tag = ifd.tags["GeoKeyDirectoryTag"]
             await reader._fill_ifd_with_data(ifd)
-            assert tag.value == [
-                GeoKey(code=1024, tag_code=0, length=1, value=1),
-                GeoKey(code=1025, tag_code=0, length=1, value=1),
-                GeoKey(
-                    code=1026,
-                    tag_code=34737,
-                    length=25,
-                    value=b"WGS 84 / Pseudo-Mercator",
-                    offset=0,
-                ),
-                GeoKey(
-                    code=2049,
-                    tag_code=34737,
-                    length=7,
-                    value=b"WGS 84",
-                    offset=25,
-                ),
-                GeoKey(
-                    code=2051,
-                    tag_code=34736,
-                    length=1,
-                    value=1.3,
-                    offset=0,
-                ),
-                GeoKey(code=3072, tag_code=0, length=1, value=3857),
-                GeoKey(code=3076, tag_code=0, length=1, value=37378),
-            ]
+            assert tag.value == {
+                "GTCitation": "WGS 84 / Pseudo-Mercator",
+                "GTModelType": 1,
+                "GTRasterType": 1,
+                "GeogCitation": "WGS 84",
+                "GeogPrimeMeridian": 1.3,
+                "ProjLinearUnits": 37378,
+                "ProjectedCSType": 3857,
+            }

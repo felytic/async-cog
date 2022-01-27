@@ -34,10 +34,12 @@ class IFD(BaseModel):
         GeoKeyDirectoryTag with them
         """
 
-        if "GeoKeyDirectoryTag" not in self:
+        tag = self.tags.get("GeoKeyDirectoryTag")
+
+        if not tag or not tag.values:
             return
 
-        for geo_key in self["GeoKeyDirectoryTag"]:
+        for geo_key in tag.values:
             if geo_key.tag_code > 0:
                 tag_name = TAG_NAMES[geo_key.tag_code]
                 tag_value = self[tag_name]
