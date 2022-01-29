@@ -1,4 +1,4 @@
-from async_cog.tag import Tag
+from async_cog.tags import Tag
 
 
 def test_tag_format() -> None:

@@ -4,20 +4,22 @@ from struct import calcsize, pack, unpack
 from typing import Any, Iterator, List, Literal
 
 from aiohttp import ClientSession
+from pydantic import PositiveInt
 
 from async_cog.ifd import IFD
-from async_cog.tag import Tag
+from async_cog.tags import Tag
 
 
 class COGReader:
-    _version: int
-    _first_ifd_pointer: int
+    _version: Literal[42, 43]
+    _first_ifd_pointer: PositiveInt
     _ifds: List[IFD]
     # For characters meainng in *_fmt attributes see:
     # https://docs.python.org/3.10/library/struct.html#format-characters
     _byte_order_fmt: Literal["<", ">"]
     _pointer_fmt: Literal["I", "Q"]
     _n_fmt: Literal["H", "Q"]
+    _url: str
 
     def __init__(self, url: str):
         self._url: str = url

@@ -8,7 +8,7 @@ from aioresponses import CallbackResult, aioresponses
 
 from async_cog import COGReader
 from async_cog.ifd import IFD
-from async_cog.tag import Tag
+from async_cog.tags import Tag
 
 
 def test_constructor() -> None:

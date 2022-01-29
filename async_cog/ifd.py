@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from pydantic import BaseModel
 
-from async_cog.tag import TAG_NAMES, Tag
+from async_cog.tags import Tag
 
 
 class IFD(BaseModel):
@@ -41,7 +41,7 @@ class IFD(BaseModel):
 
         for geo_key in tag.values:
             if geo_key.tag_code > 0:
-                tag_name = TAG_NAMES[geo_key.tag_code]
+                tag_name = geo_key.tag_code.name
                 tag_value = self[tag_name]
 
                 if tag_name == "GeoAsciiParamsTag":

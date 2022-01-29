@@ -1,4 +1,4 @@
-from async_cog.geo_key import GeoKey
+from async_cog.geokeys import GeoKey
 
 
 def test_geokey_name() -> None:

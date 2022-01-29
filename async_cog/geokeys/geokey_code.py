@@ -1,25 +1,26 @@
-from typing import Any, Optional
+from __future__ import annotations
 
-from pydantic import BaseModel
+from typing import Any, Iterator
 
 
-class GeoKey(BaseModel):
-    code: int
-    tag_code: int
-    length: int
-    value: Optional[Any]
-    offset: Optional[int]
+class GeoKeyCode(int):
+    name: str
 
-    def __str__(self) -> str:
-        return f"{self.name}: {str(self.value)}"
+    @classmethod
+    def __get_validators__(cls) -> Iterator[Any]:
+        yield cls.validate
 
-    @property
-    def name(self) -> str:
-        return GEO_KEY_NAMES.get(self.code, f"UNKNOWN KEY {self.code}")
+    @classmethod
+    def validate(cls, code: int) -> GeoKeyCode:
+        return cls(code)
+
+    def __init__(self, code: int):
+        assert isinstance(code, int)
+        self.name = GEOKEY_NAMES.get(code, f"UNKNOWN GEOKEY {code}")
 
 
 # https://svn.osgeo.org/metacrs/geotiff/trunk/geotiff/html/usgs_geotiff.html#hdr%2055
-GEO_KEY_NAMES = {
+GEOKEY_NAMES = {
     1024: "GTModelType",
     1025: "GTRasterType",
     1026: "GTCitation",

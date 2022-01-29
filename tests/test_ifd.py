@@ -2,7 +2,7 @@ import pytest
 from aioresponses import aioresponses
 
 from async_cog import COGReader
-from async_cog.tag import Tag
+from async_cog.tags import Tag
 from tests.test_cog_reader import response_read
 
 
