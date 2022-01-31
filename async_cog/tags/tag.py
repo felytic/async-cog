@@ -53,10 +53,7 @@ class Tag(BaseModel):
         if self.data is None:
             return
 
-        if self.type == 2:  # ASCII string
-            self.values = self.data.decode()
-
-        elif self.type in (5, 10):  # RATIONAL and SIGNED RATIONAL
+        if self.type in (5, 10):  # RATIONAL and SIGNED RATIONAL
             self._parse_rationals(byte_order_fmt)
 
         else:

@@ -1,3 +1,4 @@
-from .tag import Tag
+from async_cog.tags.string_tag import StringTag
+from async_cog.tags.tag import Tag
 
-__all__ = ["Tag"]
+__all__ = ["Tag", "StringTag"]
