@@ -25,15 +25,15 @@ class TagType(int):
 
 # https://docs.python.org/3/library/struct.html#format-characters
 TAG_TYPES = {
-    1: "B",  # BYTE
+    1: "B",  # BYTE (1 byte integer)
     2: "s",  # ASCII
     3: "H",  # SHORT
     4: "I",  # LONG
     # In TIFF format, a RATIONAL value is a fractional value
     # represented by the ratio of two unsigned 4-byte integers.
     5: "Q",  # RATIONAL
-    6: "b",  # SBYTE
-    7: "s",  # UNDEFINED
+    6: "b",  # SBYTE (1 byte integer)
+    7: "s",  # UNDEFINED (bytes)
     8: "h",  # SSHORT
     9: "i",  # SLONG
     # same for signed RATIONAL

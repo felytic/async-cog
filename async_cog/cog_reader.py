@@ -7,7 +7,7 @@ from aiohttp import ClientSession
 from pydantic import PositiveInt
 
 from async_cog.ifd import IFD
-from async_cog.tags import StringTag, Tag
+from async_cog.tags import BytesTag, StringTag, Tag
 
 
 class COGReader:
@@ -271,11 +271,16 @@ class COGReader:
 
         code, tag_type, n_values, pointer = unpack(self._tag_format, tag_bytes)
 
-        if tag_type != 2:  # ASCII string
-            tag = Tag(code=code, type=tag_type, n_values=n_values, data_pointer=pointer)
+        tag: Tag
+
+        if tag_type == 2:  # ASCII string
+            tag = StringTag(code=code, n_values=n_values, data_pointer=pointer)
+
+        elif tag_type == 7:  # bytes
+            tag = BytesTag(code=code, n_values=n_values, data_pointer=pointer)
 
         else:
-            tag = StringTag(code=code, n_values=n_values, data_pointer=pointer)
+            tag = Tag(code=code, type=tag_type, n_values=n_values, data_pointer=pointer)
 
         # If tag data type fits into it's data pointer size, then last bytes contain
         # data, not it's pointer
