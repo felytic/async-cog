@@ -7,7 +7,7 @@ from aiohttp import ClientSession
 from pydantic import PositiveInt
 
 from async_cog.ifd import IFD
-from async_cog.tags import BytesTag, StringTag, Tag
+from async_cog.tags import BytesTag, FractionsTag, StringTag, Tag
 
 
 class COGReader:
@@ -278,6 +278,11 @@ class COGReader:
 
         elif tag_type == 7:  # bytes
             tag = BytesTag(code=code, n_values=n_values, data_pointer=pointer)
+
+        elif tag_type in (5, 10):  # fractions
+            tag = FractionsTag(
+                code=code, type=tag_type, n_values=n_values, data_pointer=pointer
+            )
 
         else:
             tag = Tag(code=code, type=tag_type, n_values=n_values, data_pointer=pointer)

@@ -1,4 +1,3 @@
-from fractions import Fraction
 from struct import calcsize, unpack
 from typing import Any, Literal, Optional
 
@@ -53,11 +52,7 @@ class Tag(BaseModel):
         if self.data is None:
             return
 
-        if self.type in (5, 10):  # RATIONAL and SIGNED RATIONAL
-            self._parse_rationals(byte_order_fmt)
-
-        else:
-            self._parse(byte_order_fmt)
+        self._parse(byte_order_fmt)
 
         if self.name == "GeoKeyDirectoryTag":
             self._parse_geokeys()
@@ -69,28 +64,6 @@ class Tag(BaseModel):
 
         assert self.data
         self.values = list(unpack(f"{byte_order_fmt}{self.format_str}", self.data))
-
-    def _parse_rationals(self, byte_order_fmt: Literal["<", ">"]) -> None:
-        """
-        Each rational in TIFF represented by two LONGs: numerator and denominator.
-        Parse them into list of Fractions
-        """
-
-        assert self.data
-        # "I" is for unsigned LONGs and "i" for signed
-        type_str = "I" if self.type == 5 else "i"
-
-        # 2 * n values of type (un)signed LONG
-        format_str = f"{byte_order_fmt}{self.n_values * 2}{type_str}"
-        values = unpack(format_str, self.data)
-
-        numerators = values[::2]  # evens
-        denominators = values[1::2]  # odds
-
-        self.values = [
-            Fraction(numerator, denominator)
-            for numerator, denominator in zip(numerators, denominators)
-        ]
 
     def _parse_geokeys(self) -> None:
         """
