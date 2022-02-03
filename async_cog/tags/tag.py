@@ -34,9 +34,6 @@ class Tag(BaseModel):
     @property
     def value(self) -> Any:
         if self.values:
-            if len(self.values) == 1 and self.name != "GeoDoubleParamsTag":
-                return self.values[0]
-
             if self.name == "GeoKeyDirectoryTag":
                 return {item.name: item.value for item in self.values}
 
