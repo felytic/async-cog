@@ -6,7 +6,7 @@ from async_cog.tags.tag import Tag
 
 
 class FractionsTag(Tag):
-    values: Optional[List[Fraction]]
+    value: Optional[List[Fraction]]
 
     class Config:
         arbitrary_types_allowed = True
@@ -28,7 +28,7 @@ class FractionsTag(Tag):
         numerators = values[::2]  # evens
         denominators = values[1::2]  # odds
 
-        self.values = [
+        self.value = [
             Fraction(numerator, denominator)
             for numerator, denominator in zip(numerators, denominators)
         ]

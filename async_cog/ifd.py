@@ -1,8 +1,10 @@
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 from pydantic import BaseModel
 
+from async_cog.geokeys import GeoKey
 from async_cog.tags import Tag
+from async_cog.tags.tag_code import GEOKEY_TAGS, TagCode
 
 
 class IFD(BaseModel):
@@ -10,46 +12,85 @@ class IFD(BaseModel):
     n_tags: int
     next_ifd_pointer: int
     tags: Dict[str, Tag]
+    geokeys: Dict[str, GeoKey] = {}
 
     def __getitem__(self, key: str) -> Any:
+        if key in self.geokeys:
+            return self.geokeys[key].value
+
         return self.tags[key].value
 
-    def __setitem__(self, key: str, tag: Tag) -> None:
-        assert tag.name == key
-        self.tags[key] = tag
+    def __setitem__(self, key: str, tag_or_geokey: Union[Tag, GeoKey]) -> None:
+        assert tag_or_geokey.name == key
+
+        if isinstance(tag_or_geokey, Tag):
+            self.tags[key] = tag_or_geokey
+
+        if isinstance(tag_or_geokey, GeoKey):
+            self.geokeys[key] = tag_or_geokey
 
     def __contains__(self, key: str) -> bool:
-        return key in self.tags
+        return key in self.tags or key in self.geokeys
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        tags = {
             tag.name: tag.value
             for tag in self.tags.values()
-            if not isinstance(tag.value, bytes)
+            if not isinstance(tag.value, bytes) and tag.code not in GEOKEY_TAGS
         }
+        geokeys = {geokey.name: geokey.value for geokey in self.geokeys.values()}
+        return {**tags, **geokeys}
 
     def parse_geokeys(self) -> None:
         """
         Parse values stored in GeoDoubleParamsTag and GeoAsciiParamsTag and enrich
         GeoKeyDirectoryTag with them
+
+        GeoKey structure (array of size 4 * n):
+        +---------+-------------+----------------+--------+
+        | version |    revision | minor_revision | keys_n |
+        +---------+-------------+----------------+--------+
+        |   . . . |       . . . |          . . . |  . . . |
+        +---------+-------------+----------------+--------+
+        |    code |    tag_code |         length |  value |
+        +---------+-------------+----------------+--------+
+        |   . . . |       . . . |          . . . |  . . . |
+        +---------+-------------+----------------+--------+
+
+        If tag_code != 0 then values are in tag with "tag_code" code on position "value"
+
+        svn.osgeo.org/metacrs/geotiff/trunk/geotiff/html/usgs_geotiff.html#hdr%2023
         """
-
-        tag = self.tags.get("GeoKeyDirectoryTag")
-
-        if not tag or not tag.values:
+        if "GeoKeyDirectoryTag" not in self:
             return
 
-        for geo_key in tag.values:
-            if geo_key.tag_code > 0:
-                tag_name = geo_key.tag_code.name
+        dir_tag = self["GeoKeyDirectoryTag"]
+
+        version, _, _, keys_n = dir_tag[:4]
+        assert version == 1
+
+        for i in range(1, keys_n + 1):
+            geokey_code, tag_code, length, value = dir_tag[4 * i : 4 * (i + 1)]
+            offset = None
+
+            if tag_code != 0:
+                offset = value
+                value = None
+
+            if tag_code > 0:
+                tag_name = TagCode(tag_code).name
                 tag_value = self[tag_name]
 
                 if tag_name == "GeoAsciiParamsTag":
-                    start = geo_key.offset
-                    end = geo_key.offset + geo_key.length
+                    start = offset
+                    end = offset + length
                     # We omit "|" symbol, which separates ASCII values in the string
                     # by reducing line length by 1
-                    geo_key.value = tag_value[start : end - 1]
+                    value = tag_value[start : end - 1]
 
                 else:
-                    geo_key.value = tag_value[geo_key.offset]
+                    value = tag_value[offset]
+
+            geo_key = GeoKey(code=geokey_code, value=value)
+
+            self[geo_key.name] = geo_key

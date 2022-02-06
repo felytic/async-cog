@@ -7,7 +7,7 @@ from aiohttp import ClientSession
 from pydantic import PositiveInt
 
 from async_cog.ifd import IFD
-from async_cog.tags import BytesTag, FractionsTag, NumberTag, StringTag, Tag
+from async_cog.tags import BytesTag, FractionsTag, NumbersTag, NumberTag, StringTag, Tag
 
 
 class COGReader:
@@ -233,6 +233,7 @@ class COGReader:
             n_tags=n_tags,
             next_ifd_pointer=next_ifd_pointer,
             tags={tag.name: tag for tag in tags},
+            geokeys={},
         )
 
     def _tags_from_data(self, n_tags: int, tags_bytes: bytes) -> Iterator[Tag]:
@@ -289,12 +290,15 @@ class COGReader:
             tag = NumberTag(code=code, type=tag_type, data_pointer=pointer)
 
         else:
-            tag = Tag(code=code, type=tag_type, n_values=n_values, data_pointer=pointer)
+            tag = NumbersTag(
+                code=code, type=tag_type, n_values=n_values, data_pointer=pointer
+            )
 
         # If tag data type fits into it's data pointer size, then last bytes contain
         # data, not it's pointer
         if tag.data_size <= calcsize(self._pointer_fmt):
             tag.data = pack(self._pointer_fmt, pointer)[: tag.data_size]
+            tag.parse_data(self._byte_order_fmt)
             tag.data_pointer = None
 
         return tag

@@ -5,8 +5,8 @@ from async_cog.tags.tag_type import TagType
 
 
 class BytesTag(Tag):
-    values: Optional[bytes]
+    value: Optional[bytes]
     type = TagType(7)
 
     def parse_data(self, byte_order_fmt: Literal["<", ">"]) -> None:
-        self.values = self.data
+        self.value = self.data

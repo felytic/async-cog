@@ -106,3 +106,6 @@ TAG_NAMES = {
     34736: "GeoDoubleParamsTag",
     34737: "GeoAsciiParamsTag",
 }
+
+
+GEOKEY_TAGS = [34735, 34736, 34737]

@@ -7,9 +7,9 @@ from async_cog.tags.tag import Tag
 
 
 class NumberTag(Tag):
-    values: Union[int, float, None]
+    value: Union[int, float, None]
     n_values: PositiveInt = 1
 
     def parse_data(self, byte_order_fmt: Literal["<", ">"]) -> None:
         assert self.data
-        (self.values,) = list(unpack(f"{byte_order_fmt}{self.format_str}", self.data))
+        (self.value,) = list(unpack(f"{byte_order_fmt}{self.format_str}", self.data))
