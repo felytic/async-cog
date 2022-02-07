@@ -34,4 +34,4 @@ def test_not_imlemented() -> None:
     tag = Tag(code=34735, type=3, n_values=32, data_pointer=502)
 
     with raises(NotImplementedError):
-        tag.parse_data("<")
+        tag.parse_data(b"", "<")

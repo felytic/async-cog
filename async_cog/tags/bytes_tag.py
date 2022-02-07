@@ -8,5 +8,5 @@ class BytesTag(Tag):
     value: Optional[bytes]
     type = TagType(7)
 
-    def parse_data(self, byte_order_fmt: Literal["<", ">"]) -> None:
-        self.value = self.data
+    def parse_data(self, data: bytes, byte_order_fmt: Literal["<", ">"]) -> None:
+        self.value = data

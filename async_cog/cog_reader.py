@@ -297,8 +297,8 @@ class COGReader:
         # If tag data type fits into it's data pointer size, then last bytes contain
         # data, not it's pointer
         if tag.data_size <= calcsize(self._pointer_fmt):
-            tag.data = pack(self._pointer_fmt, pointer)[: tag.data_size]
-            tag.parse_data(self._byte_order_fmt)
+            data = pack(self._pointer_fmt, pointer)[: tag.data_size]
+            tag.parse_data(data, self._byte_order_fmt)
             tag.data_pointer = None
 
         return tag
@@ -310,9 +310,8 @@ class COGReader:
         """
 
         if tag.data_pointer:
-            tag.data = await self._read(tag.data_pointer, tag.data_size)
-
-        tag.parse_data(self._byte_order_fmt)
+            data = await self._read(tag.data_pointer, tag.data_size)
+            tag.parse_data(data, self._byte_order_fmt)
 
     async def _fill_ifd_with_data(self, ifd: IFD) -> None:
         """

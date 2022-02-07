@@ -8,6 +8,5 @@ class StringTag(Tag):
     value: Optional[str]
     type = TagType(2)
 
-    def parse_data(self, byte_order_fmt: Literal["<", ">"]) -> None:
-        assert self.data
-        self.value = self.data.decode()
+    def parse_data(self, data: bytes, byte_order_fmt: Literal["<", ">"]) -> None:
+        self.value = data.decode()

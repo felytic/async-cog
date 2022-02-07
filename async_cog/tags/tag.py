@@ -13,7 +13,6 @@ class Tag(BaseModel, ABC):
     type: TagType
     n_values: PositiveInt
     data_pointer: Optional[PositiveInt]
-    data: Optional[bytes]
     value: Optional[Any]
 
     def __str__(self) -> str:
@@ -31,7 +30,7 @@ class Tag(BaseModel, ABC):
     def name(self) -> str:
         return self.code.name
 
-    def parse_data(self, byte_order_fmt: Literal["<", ">"]) -> None:
+    def parse_data(self, data: bytes, byte_order_fmt: Literal["<", ">"]) -> None:
         """
         Parse binary self.data and store values into self.value
         """
