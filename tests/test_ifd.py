@@ -2,7 +2,7 @@ import pytest
 from aioresponses import aioresponses
 
 from async_cog import COGReader
-from async_cog.tag import Tag
+from async_cog.tags import Tag
 from tests.test_cog_reader import response_read
 
 
@@ -40,9 +40,9 @@ async def test_ifd_dict_methods() -> None:
 
         async with COGReader(url) as reader:
             ifd = reader._ifds[0]
-            assert ifd["SamplesPerPixel"] == b"\x03\x00"
+            assert ifd["SamplesPerPixel"] == 3
 
-            tag = Tag(code=34735, type=3, n_values=32, data_pointer=10851)
+            tag = Tag(code=34735, type=3, length=32, data_pointer=10851)
             ifd["GeoKeyDirectoryTag"] = tag
 
         with pytest.raises(AssertionError):

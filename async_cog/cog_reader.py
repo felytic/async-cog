@@ -4,20 +4,23 @@ from struct import calcsize, pack, unpack
 from typing import Any, Iterator, List, Literal
 
 from aiohttp import ClientSession
+from pydantic import PositiveInt
 
 from async_cog.ifd import IFD
-from async_cog.tag import Tag
+from async_cog.tags import BytesTag, FractionsTag, ListTag, NumberTag, StringTag, Tag
+from async_cog.tags.tag_code import GEOKEY_TAGS
 
 
 class COGReader:
-    _version: int
-    _first_ifd_pointer: int
+    _version: Literal[42, 43]
+    _first_ifd_pointer: PositiveInt
     _ifds: List[IFD]
     # For characters meainng in *_fmt attributes see:
     # https://docs.python.org/3.10/library/struct.html#format-characters
     _byte_order_fmt: Literal["<", ">"]
     _pointer_fmt: Literal["I", "Q"]
     _n_fmt: Literal["H", "Q"]
+    _url: str
 
     def __init__(self, url: str):
         self._url: str = url
@@ -267,14 +270,33 @@ class COGReader:
         +--------------+------------+-----------------------------------+
         """
 
-        code, tag_type, n_values, pointer = unpack(self._tag_format, tag_bytes)
+        code, tag_type, length, pointer = unpack(self._tag_format, tag_bytes)
 
-        tag = Tag(code=code, type=tag_type, n_values=n_values, data_pointer=pointer)
+        tag: Tag
+
+        if tag_type == 2:  # ASCII string
+            tag = StringTag(code=code, length=length, data_pointer=pointer)
+
+        elif tag_type == 7:  # bytes
+            tag = BytesTag(code=code, length=length, data_pointer=pointer)
+
+        elif tag_type in (5, 10):  # fractions
+            tag = FractionsTag(
+                code=code, type=tag_type, length=length, data_pointer=pointer
+            )
+
+        # GeoKeyDirectoryTag must be list tag because parsing it relies on indexing
+        elif length == 1 and code not in GEOKEY_TAGS:
+            tag = NumberTag(code=code, type=tag_type, data_pointer=pointer)
+
+        else:
+            tag = ListTag(code=code, type=tag_type, length=length, data_pointer=pointer)
 
         # If tag data type fits into it's data pointer size, then last bytes contain
         # data, not it's pointer
         if tag.data_size <= calcsize(self._pointer_fmt):
-            tag.data = pack(self._pointer_fmt, pointer)[: tag.data_size]
+            data = pack(self._pointer_fmt, pointer)[: tag.data_size]
+            tag.parse_data(data, self._byte_order_fmt)
             tag.data_pointer = None
 
         return tag
@@ -286,9 +308,8 @@ class COGReader:
         """
 
         if tag.data_pointer:
-            tag.data = await self._read(tag.data_pointer, tag.data_size)
-
-        tag.parse_data(self._byte_order_fmt)
+            data = await self._read(tag.data_pointer, tag.data_size)
+            tag.parse_data(data, self._byte_order_fmt)
 
     async def _fill_ifd_with_data(self, ifd: IFD) -> None:
         """
