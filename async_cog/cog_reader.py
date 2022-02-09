@@ -270,28 +270,28 @@ class COGReader:
         +--------------+------------+-----------------------------------+
         """
 
-        code, tag_type, n_values, pointer = unpack(self._tag_format, tag_bytes)
+        code, tag_type, length, pointer = unpack(self._tag_format, tag_bytes)
 
         tag: Tag
 
         # FIXME
 
         if tag_type == 2:  # ASCII string
-            tag = StringTag(code=code, n_values=n_values, data_pointer=pointer)
+            tag = StringTag(code=code, length=length, data_pointer=pointer)
 
         elif tag_type == 7:  # bytes
-            tag = BytesTag(code=code, n_values=n_values, data_pointer=pointer)
+            tag = BytesTag(code=code, length=length, data_pointer=pointer)
 
         elif tag_type in (5, 10):  # fractions
             tag = FractionsTag(
-                code=code, type=tag_type, n_values=n_values, data_pointer=pointer
+                code=code, type=tag_type, length=length, data_pointer=pointer
             )
-        elif n_values == 1 and code != 34736:
+        elif length == 1 and code != 34736:
             tag = NumberTag(code=code, type=tag_type, data_pointer=pointer)
 
         else:
             tag = NumbersTag(
-                code=code, type=tag_type, n_values=n_values, data_pointer=pointer
+                code=code, type=tag_type, length=length, data_pointer=pointer
             )
 
         # If tag data type fits into it's data pointer size, then last bytes contain

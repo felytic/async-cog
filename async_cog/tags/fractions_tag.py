@@ -21,7 +21,7 @@ class FractionsTag(Tag):
         type_str = "I" if self.type == 5 else "i"
 
         # 2 * n values of type (un)signed LONG
-        format_str = f"{byte_order_fmt}{self.n_values * 2}{type_str}"
+        format_str = f"{byte_order_fmt}{self.length * 2}{type_str}"
         values = unpack(format_str, data)
 
         numerators = values[::2]  # evens

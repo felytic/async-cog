@@ -42,7 +42,7 @@ async def test_ifd_dict_methods() -> None:
             ifd = reader._ifds[0]
             assert ifd["SamplesPerPixel"] == 3
 
-            tag = Tag(code=34735, type=3, n_values=32, data_pointer=10851)
+            tag = Tag(code=34735, type=3, length=32, data_pointer=10851)
             ifd["GeoKeyDirectoryTag"] = tag
 
         with pytest.raises(AssertionError):

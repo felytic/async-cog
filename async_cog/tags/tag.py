@@ -11,7 +11,7 @@ from async_cog.tags.tag_type import TagType
 class Tag(BaseModel, ABC):
     code: TagCode
     type: TagType
-    n_values: PositiveInt
+    length: PositiveInt
     data_pointer: Optional[PositiveInt]
     value: Optional[Any]
 
@@ -20,7 +20,7 @@ class Tag(BaseModel, ABC):
 
     @property
     def format_str(self) -> str:
-        return f"{self.n_values}{self.type.format}"
+        return f"{self.length}{self.type.format}"
 
     @property
     def data_size(self) -> int:
