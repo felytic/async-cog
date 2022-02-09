@@ -8,7 +8,7 @@ from aioresponses import CallbackResult, aioresponses
 
 from async_cog import COGReader
 from async_cog.ifd import IFD
-from async_cog.tags import BytesTag, NumbersTag, NumberTag, StringTag
+from async_cog.tags import BytesTag, ListTag, NumberTag, StringTag
 
 
 def test_constructor() -> None:
@@ -89,7 +89,7 @@ async def test_read_ifds() -> None:
         {
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=64),
             "ImageLength": NumberTag(code=257, type=3, length=1, value=64),
-            "BitsPerSample": NumbersTag(code=258, type=3, length=3, data_pointer=170),
+            "BitsPerSample": ListTag(code=258, type=3, length=3, data_pointer=170),
             "Compression": NumberTag(code=259, type=3, length=1, value=7),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
             "PlanarConfiguration": NumberTag(code=284, type=3, length=1, value=1),
@@ -97,14 +97,14 @@ async def test_read_ifds() -> None:
             "TileLength": NumberTag(code=323, type=3, length=1, value=256),
             "TileOffsets": NumberTag(code=324, type=4, length=1, value=255),
             "TileByteCounts": NumberTag(code=325, type=4, length=1, value=4027),
-            "SampleFormat": NumbersTag(code=339, type=3, length=3, data_pointer=176),
+            "SampleFormat": ListTag(code=339, type=3, length=3, data_pointer=176),
             "JPEGTables": BytesTag(code=347, type=7, length=73, data_pointer=182),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=32),
             "ImageLength": NumberTag(code=257, type=3, length=1, value=32),
-            "BitsPerSample": NumbersTag(code=258, type=3, length=3, data_pointer=4456),
+            "BitsPerSample": ListTag(code=258, type=3, length=3, data_pointer=4456),
             "Compression": NumberTag(code=259, type=3, length=1, value=7),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
@@ -113,14 +113,14 @@ async def test_read_ifds() -> None:
             "TileLength": NumberTag(code=323, type=3, length=1, value=128),
             "TileOffsets": NumberTag(code=324, type=4, length=1, value=5321),
             "TileByteCounts": NumberTag(code=325, type=4, length=1, value=2263),
-            "SampleFormat": NumbersTag(code=339, type=3, length=3, data_pointer=4462),
+            "SampleFormat": ListTag(code=339, type=3, length=3, data_pointer=4462),
             "JPEGTables": BytesTag(code=347, type=7, length=73, data_pointer=4468),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=16),
             "ImageLength": NumberTag(code=257, type=3, length=1, value=16),
-            "BitsPerSample": NumbersTag(code=258, type=3, length=3, data_pointer=4716),
+            "BitsPerSample": ListTag(code=258, type=3, length=3, data_pointer=4716),
             "Compression": NumberTag(code=259, type=3, length=1, value=7),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
@@ -129,14 +129,14 @@ async def test_read_ifds() -> None:
             "TileLength": NumberTag(code=323, type=3, length=1, value=128),
             "TileOffsets": NumberTag(code=324, type=4, length=1, value=7584),
             "TileByteCounts": NumberTag(code=325, type=4, length=1, value=996),
-            "SampleFormat": NumbersTag(code=339, type=3, length=3, data_pointer=4722),
+            "SampleFormat": ListTag(code=339, type=3, length=3, data_pointer=4722),
             "JPEGTables": BytesTag(code=347, type=7, length=73, data_pointer=4728),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=8),
             "ImageLength": NumberTag(code=257, type=3, length=1, value=8),
-            "BitsPerSample": NumbersTag(code=258, type=3, length=3, data_pointer=4976),
+            "BitsPerSample": ListTag(code=258, type=3, length=3, data_pointer=4976),
             "Compression": NumberTag(code=259, type=3, length=1, value=7),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
@@ -145,14 +145,14 @@ async def test_read_ifds() -> None:
             "TileLength": NumberTag(code=323, type=3, length=1, value=128),
             "TileOffsets": NumberTag(code=324, type=4, length=1, value=8580),
             "TileByteCounts": NumberTag(code=325, type=4, length=1, value=935),
-            "SampleFormat": NumbersTag(code=339, type=3, length=3, data_pointer=4982),
+            "SampleFormat": ListTag(code=339, type=3, length=3, data_pointer=4982),
             "JPEGTables": BytesTag(code=347, type=7, length=73, data_pointer=4988),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=4),
             "ImageLength": NumberTag(code=257, type=3, length=1, value=4),
-            "BitsPerSample": NumbersTag(code=258, type=3, length=3, data_pointer=5236),
+            "BitsPerSample": ListTag(code=258, type=3, length=3, data_pointer=5236),
             "Compression": NumberTag(code=259, type=3, length=1, value=7),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
@@ -161,17 +161,17 @@ async def test_read_ifds() -> None:
             "TileLength": NumberTag(code=323, type=3, length=1, value=128),
             "TileOffsets": NumberTag(code=324, type=4, length=1, value=9515),
             "TileByteCounts": NumberTag(code=325, type=4, length=1, value=1318),
-            "SampleFormat": NumbersTag(code=339, type=3, length=3, data_pointer=5242),
+            "SampleFormat": ListTag(code=339, type=3, length=3, data_pointer=5242),
             "JPEGTables": BytesTag(code=347, type=7, length=73, data_pointer=5248),
         },
         {
-            "GeoKeyDirectoryTag": NumbersTag(
+            "GeoKeyDirectoryTag": ListTag(
                 code=34735, type=3, length=32, data_pointer=10875
             ),
             "GeoAsciiParamsTag": StringTag(
                 code=34737, type=2, length=33, data_pointer=10939
             ),
-            "GeoDoubleParamsTag": NumbersTag(
+            "GeoDoubleParamsTag": ListTag(
                 code=34736, type=12, length=1, data_pointer=10972
             ),
         },
@@ -201,7 +201,7 @@ async def test_read_ifds_big_tiff() -> None:
         {
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=64),
             "ImageLength": NumberTag(code=257, type=3, length=1, value=64),
-            "BitsPerSample": NumbersTag(code=258, type=3, length=3, value=[8, 8, 8]),
+            "BitsPerSample": ListTag(code=258, type=3, length=3, value=[8, 8, 8]),
             "Compression": NumberTag(code=259, type=3, length=1, value=1),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
@@ -210,13 +210,13 @@ async def test_read_ifds_big_tiff() -> None:
             "TileLength": NumberTag(code=323, type=3, length=1, value=256),
             "TileOffsets": NumberTag(code=324, type=16, length=1, value=272),
             "TileByteCounts": NumberTag(code=325, type=16, length=1, value=196608),
-            "SampleFormat": NumbersTag(code=339, type=3, length=3, value=[1, 1, 1]),
+            "SampleFormat": ListTag(code=339, type=3, length=3, value=[1, 1, 1]),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=32),
             "ImageLength": NumberTag(code=257, type=3, length=1, value=32),
-            "BitsPerSample": NumbersTag(code=258, type=3, length=3, value=[8, 8, 8]),
+            "BitsPerSample": ListTag(code=258, type=3, length=3, value=[8, 8, 8]),
             "Compression": NumberTag(code=259, type=3, length=1, value=1),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
@@ -225,13 +225,13 @@ async def test_read_ifds_big_tiff() -> None:
             "TileLength": NumberTag(code=323, type=3, length=1, value=128),
             "TileOffsets": NumberTag(code=324, type=16, length=1, value=197984),
             "TileByteCounts": NumberTag(code=325, type=16, length=1, value=49152),
-            "SampleFormat": NumbersTag(code=339, type=3, length=3, value=[1, 1, 1]),
+            "SampleFormat": ListTag(code=339, type=3, length=3, value=[1, 1, 1]),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=16),
             "ImageLength": NumberTag(code=257, type=3, length=1, value=16),
-            "BitsPerSample": NumbersTag(code=258, type=3, length=3, value=[8, 8, 8]),
+            "BitsPerSample": ListTag(code=258, type=3, length=3, value=[8, 8, 8]),
             "Compression": NumberTag(code=259, type=3, length=1, value=1),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
@@ -240,13 +240,13 @@ async def test_read_ifds_big_tiff() -> None:
             "TileLength": NumberTag(code=323, type=3, length=1, value=128),
             "TileOffsets": NumberTag(code=324, type=16, length=1, value=247136),
             "TileByteCounts": NumberTag(code=325, type=16, length=1, value=49152),
-            "SampleFormat": NumbersTag(code=339, type=3, length=3, value=[1, 1, 1]),
+            "SampleFormat": ListTag(code=339, type=3, length=3, value=[1, 1, 1]),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=8),
             "ImageLength": NumberTag(code=257, type=3, length=1, value=8),
-            "BitsPerSample": NumbersTag(code=258, type=3, length=3, value=[8, 8, 8]),
+            "BitsPerSample": ListTag(code=258, type=3, length=3, value=[8, 8, 8]),
             "Compression": NumberTag(code=259, type=3, length=1, value=1),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
@@ -255,13 +255,13 @@ async def test_read_ifds_big_tiff() -> None:
             "TileLength": NumberTag(code=323, type=3, length=1, value=128),
             "TileOffsets": NumberTag(code=324, type=16, length=1, value=296288),
             "TileByteCounts": NumberTag(code=325, type=16, length=1, value=49152),
-            "SampleFormat": NumbersTag(code=339, type=3, length=3, value=[1, 1, 1]),
+            "SampleFormat": ListTag(code=339, type=3, length=3, value=[1, 1, 1]),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=4),
             "ImageLength": NumberTag(code=257, type=3, length=1, value=4),
-            "BitsPerSample": NumbersTag(code=258, type=3, length=3, value=[8, 8, 8]),
+            "BitsPerSample": ListTag(code=258, type=3, length=3, value=[8, 8, 8]),
             "Compression": NumberTag(code=259, type=3, length=1, value=1),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
@@ -270,7 +270,7 @@ async def test_read_ifds_big_tiff() -> None:
             "TileLength": NumberTag(code=323, type=3, length=1, value=128),
             "TileOffsets": NumberTag(code=324, type=16, length=1, value=345440),
             "TileByteCounts": NumberTag(code=325, type=16, length=1, value=49152),
-            "SampleFormat": NumbersTag(code=339, type=3, length=3, value=[1, 1, 1]),
+            "SampleFormat": ListTag(code=339, type=3, length=3, value=[1, 1, 1]),
         },
     ]
     with aioresponses() as mocked_response:
@@ -296,7 +296,7 @@ async def test_fill_tag_data() -> None:
         mocked_response.get(url, callback=response_read, repeat=True)
 
         async with COGReader(url) as reader:
-            tag = NumbersTag(code=258, type=3, length=3, data_pointer=170)
+            tag = ListTag(code=258, type=3, length=3, data_pointer=170)
             await reader._fill_tag_with_data(tag)
 
 

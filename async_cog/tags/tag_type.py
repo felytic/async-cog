@@ -6,6 +6,8 @@ from typing import Any, Iterator
 class TagType(int):
     format: str
 
+    # pydantic needs this function for validation, see:
+    # https://pydantic-docs.helpmanual.io/usage/types/#classes-with-__get_validators__
     @classmethod
     def __get_validators__(cls) -> Iterator[Any]:
         yield cls.validate
@@ -15,8 +17,6 @@ class TagType(int):
         return cls(type_code)
 
     def __init__(self, type_code: int):
-        assert isinstance(type_code, int)
-
         if type_code not in TAG_TYPES:
             raise ValueError(f"Tag with type {type_code} is not supported")
 

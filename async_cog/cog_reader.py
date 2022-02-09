@@ -7,7 +7,8 @@ from aiohttp import ClientSession
 from pydantic import PositiveInt
 
 from async_cog.ifd import IFD
-from async_cog.tags import BytesTag, FractionsTag, NumbersTag, NumberTag, StringTag, Tag
+from async_cog.tags import BytesTag, FractionsTag, ListTag, NumberTag, StringTag, Tag
+from async_cog.tags.tag_code import GEOKEY_TAGS
 
 
 class COGReader:
@@ -233,7 +234,6 @@ class COGReader:
             n_tags=n_tags,
             next_ifd_pointer=next_ifd_pointer,
             tags={tag.name: tag for tag in tags},
-            geokeys={},
         )
 
     def _tags_from_data(self, n_tags: int, tags_bytes: bytes) -> Iterator[Tag]:
@@ -274,8 +274,6 @@ class COGReader:
 
         tag: Tag
 
-        # FIXME
-
         if tag_type == 2:  # ASCII string
             tag = StringTag(code=code, length=length, data_pointer=pointer)
 
@@ -286,13 +284,13 @@ class COGReader:
             tag = FractionsTag(
                 code=code, type=tag_type, length=length, data_pointer=pointer
             )
-        elif length == 1 and code != 34736:
+
+        # GeoKeyDirectoryTag must be list tag because parsing it relies on indexing
+        elif length == 1 and code not in GEOKEY_TAGS:
             tag = NumberTag(code=code, type=tag_type, data_pointer=pointer)
 
         else:
-            tag = NumbersTag(
-                code=code, type=tag_type, length=length, data_pointer=pointer
-            )
+            tag = ListTag(code=code, type=tag_type, length=length, data_pointer=pointer)
 
         # If tag data type fits into it's data pointer size, then last bytes contain
         # data, not it's pointer

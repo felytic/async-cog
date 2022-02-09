@@ -1,6 +1,6 @@
 from typing import Any, Dict, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, NonNegativeInt
 
 from async_cog.geokeys import GeoKey
 from async_cog.tags import Tag
@@ -8,10 +8,10 @@ from async_cog.tags.tag_code import GEOKEY_TAGS, TagCode
 
 
 class IFD(BaseModel):
-    pointer: int
-    n_tags: int
-    next_ifd_pointer: int
-    tags: Dict[str, Tag]
+    pointer: NonNegativeInt
+    n_tags: NonNegativeInt
+    next_ifd_pointer: NonNegativeInt
+    tags: Dict[str, Tag] = {}
     geokeys: Dict[str, GeoKey] = {}
 
     def __getitem__(self, key: str) -> Any:

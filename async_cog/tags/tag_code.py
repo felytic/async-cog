@@ -6,6 +6,8 @@ from typing import Any, Iterator
 class TagCode(int):
     name: str
 
+    # pydantic needs this function for validation, see:
+    # https://pydantic-docs.helpmanual.io/usage/types/#classes-with-__get_validators__
     @classmethod
     def __get_validators__(cls) -> Iterator[Any]:
         yield cls.validate
@@ -15,7 +17,6 @@ class TagCode(int):
         return cls(code)
 
     def __init__(self, code: int):
-        assert isinstance(code, int)
         self.name = TAG_NAMES.get(code, f"UNKNOWN TAG {code}")
 
 
