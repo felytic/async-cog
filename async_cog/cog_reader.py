@@ -26,6 +26,10 @@ class COGReader:
         self._url: str = url
         self._ifds = []
 
+    def __iter__(self) -> Iterator[IFD]:
+        for ifd in self._ifds:
+            yield ifd
+
     async def __aenter__(self) -> COGReader:
         """
         Establish client session and read COG's metadata

@@ -351,3 +351,14 @@ async def test_parse_geokeys() -> None:
             assert ifd["GeogPrimeMeridian"] == 1.3
             assert ifd["ProjLinearUnits"] == 37378
             assert ifd["ProjectedCSType"] == 3857
+
+
+@pytest.mark.asyncio
+async def test_ifd_iter() -> None:
+    url = "cog.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            assert [ifd for ifd in reader] == [ifd for ifd in reader._ifds]
