@@ -1,3 +1,4 @@
+from math import ceil
 from typing import Any, Dict, Union
 
 from pydantic import BaseModel, NonNegativeInt
@@ -46,6 +47,20 @@ class IFD(BaseModel):
         }
         geokeys = {geokey.name: geokey.value for geokey in self.geokeys.values()}
         return {**tags, **geokeys}
+
+    @property
+    def x_tile_count(self) -> NonNegativeInt:
+        if not self.get("ImageWidth") or not self.get("TileWidth"):
+            return 0
+
+        return ceil(self["ImageWidth"] / self["TileWidth"])
+
+    @property
+    def y_tile_count(self) -> NonNegativeInt:
+        if not self.get("ImageHeight") or not self.get("TileHeight"):
+            return 0
+
+        return ceil(self["ImageHeight"] / self["TileHeight"])
 
     def parse_geokeys(self) -> None:
         """

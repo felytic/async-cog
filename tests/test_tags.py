@@ -24,7 +24,7 @@ def test_tag_str() -> None:
     assert str(tag) == "GeoKeyDirectoryTag: None"
 
     tag = Tag(code=257, type=3, length=1, value=256)
-    assert str(tag) == "ImageLength: 256"
+    assert str(tag) == "ImageHeight: 256"
 
     tag = Tag(code=258, type=3, length=3, value=[8, 8, 8])
     assert str(tag) == "BitsPerSample: [8, 8, 8]"

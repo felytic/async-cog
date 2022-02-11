@@ -19,13 +19,13 @@ async def test_ifd_to_dict() -> None:
             assert reader._ifds[0].to_dict() == {
                 "BitsPerSample": [8, 8, 8],
                 "Compression": 7,
-                "ImageLength": 64,
+                "ImageHeight": 64,
                 "ImageWidth": 64,
                 "PlanarConfiguration": 1,
                 "SampleFormat": [1, 1, 1],
                 "SamplesPerPixel": 3,
                 "TileByteCounts": 4027,
-                "TileLength": 256,
+                "TileHeight": 256,
                 "TileOffsets": 255,
                 "TileWidth": 256,
             }
@@ -53,3 +53,20 @@ async def test_ifd_dict_methods() -> None:
             assert "Wrong key" not in ifd
             assert ifd.get("Wrong key") is None
             assert ifd.get("Wrong key", "default") == "default"
+
+
+@pytest.mark.asyncio
+async def test_ifd_xy_tile_counts() -> None:
+    url = "cog.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            ifd_0 = reader._ifds[0]
+            assert ifd_0.x_tile_count == 1
+            assert ifd_0.y_tile_count == 1
+
+            ifd_5 = reader._ifds[5]  # IFD without TileWidth and ImageWidth properties
+            assert ifd_5.x_tile_count == 0
+            assert ifd_5.y_tile_count == 0
