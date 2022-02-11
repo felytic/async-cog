@@ -20,6 +20,12 @@ class IFD(BaseModel):
 
         return self.tags[key].value
 
+    def get(self, key: str, default: Any = None) -> Any:
+        if key in self:
+            return self[key]
+
+        return default
+
     def __setitem__(self, key: str, tag_or_geokey: Union[Tag, GeoKey]) -> None:
         assert tag_or_geokey.name == key
 

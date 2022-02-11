@@ -41,12 +41,15 @@ async def test_ifd_dict_methods() -> None:
         async with COGReader(url) as reader:
             ifd = reader._ifds[0]
             assert ifd["SamplesPerPixel"] == 3
+            assert ifd.get("SamplesPerPixel") == 3
 
             tag = Tag(code=34735, type=3, length=32, data_pointer=10851)
             ifd["GeoKeyDirectoryTag"] = tag
 
-        with pytest.raises(AssertionError):
-            ifd["Wrong name"] = tag
+            with pytest.raises(AssertionError):
+                ifd["Wrong name"] = tag
 
-        assert "ImageWidth" in ifd
-        assert "Wrong key" not in ifd
+            assert "ImageWidth" in ifd
+            assert "Wrong key" not in ifd
+            assert ifd.get("Wrong key") is None
+            assert ifd.get("Wrong key", "default") == "default"
