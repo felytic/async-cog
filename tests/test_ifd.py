@@ -21,13 +21,13 @@ async def test_ifd_to_dict() -> None:
                 "Compression": 7,
                 "ImageHeight": 64,
                 "ImageWidth": 64,
-                "PlanarConfiguration": 1,
                 "SampleFormat": [1, 1, 1],
                 "SamplesPerPixel": 3,
-                "TileByteCounts": 4027,
+                "TileByteCounts": [4027],
                 "TileHeight": 256,
-                "TileOffsets": 255,
+                "TileOffsets": [255],
                 "TileWidth": 256,
+                "UNKNOWN TAG 8476": [1],
             }
 
 

@@ -5,6 +5,7 @@ from typing import Any, Iterator
 
 class TagCode(int):
     name: str
+    is_list: bool
 
     # pydantic needs this function for validation, see:
     # https://pydantic-docs.helpmanual.io/usage/types/#classes-with-__get_validators__
@@ -17,18 +18,27 @@ class TagCode(int):
         return cls(code)
 
     def __init__(self, code: int):
-        self.name = TAG_NAMES.get(code, f"UNKNOWN TAG {code}")
+        if code in SINGLE_VALUE_TAGS_NAMES:
+            self.name = SINGLE_VALUE_TAGS_NAMES[code]
+            self.is_list = False
+
+        elif code in LIST_TAG_NAMES:
+            self.name = LIST_TAG_NAMES[code]
+            self.is_list = True
+
+        else:
+            self.name = f"UNKNOWN TAG {code}"
+            self.is_list = True
 
 
-# https://www.awaresystems.be/imaging/tiff/tifftags/privateifd/exif.html
+# https://www.awaresystems.be/imaging/tiff/tifftags/baseline.html
 # https://svn.osgeo.org/metacrs/geotiff/trunk/geotiff/html/usgs_geotiff.html#hdr%2054
 # https://github.com/python-pillow/Pillow/blob/main/src/PIL/TiffTags.py#L78
-TAG_NAMES = {
+SINGLE_VALUE_TAGS_NAMES = {
     254: "NewSubfileType",
     255: "SubfileType",
     256: "ImageWidth",
     257: "ImageHeight",
-    258: "BitsPerSample",
     259: "Compression",
     262: "PhotometricInterpretation",
     263: "Threshholding",
@@ -39,21 +49,15 @@ TAG_NAMES = {
     270: "ImageDescription",
     271: "Make",
     272: "Model",
-    273: "StripOffsets",
     274: "Orientation",
     277: "SamplesPerPixel",
     278: "RowsPerStrip",
-    279: "StripByteCounts",
-    280: "MinSampleValue",
-    281: "MaxSampleValue",
     282: "XResolution",
     283: "YResolution",
     284: "PlanarConfiguration",
     285: "PageName",
     286: "XPosition",
     287: "YPosition",
-    288: "FreeOffsets",
-    289: "FreeByteCounts",
     290: "GrayResponseUnit",
     291: "GrayResponseCurve",
     292: "T4Options",
@@ -68,22 +72,15 @@ TAG_NAMES = {
     317: "Predictor",
     318: "WhitePoint",
     319: "PrimaryChromaticities",
-    320: "ColorMap",
-    321: "HalftoneHints",
     322: "TileWidth",
     323: "TileHeight",
-    324: "TileOffsets",
-    325: "TileByteCounts",
     332: "InkSet",
     333: "InkNames",
     334: "NumberOfInks",
     336: "DotRange",
     337: "TargetPrinter",
-    338: "ExtraSamples",
-    339: "SampleFormat",
     340: "SMinSampleValue",
     341: "SMaxSampleValue",
-    342: "TransferRange",
     347: "JPEGTables",
     512: "JPEGProc",
     513: "JPEGInterchangeFormat",
@@ -94,12 +91,29 @@ TAG_NAMES = {
     519: "JPEGQTables",
     520: "JPEGDCTables",
     521: "JPEGACTables",
-    529: "YCbCrCoefficients",
-    530: "YCbCrSubSampling",
     531: "YCbCrPositioning",
-    532: "ReferenceBlackWhite",
     700: "XMP",
     33432: "Copyright",
+}
+
+LIST_TAG_NAMES = {
+    258: "BitsPerSample",
+    273: "StripOffsets",
+    279: "StripByteCounts",
+    280: "MinSampleValue",
+    281: "MaxSampleValue",
+    288: "FreeOffsets",
+    289: "FreeByteCounts",
+    320: "ColorMap",
+    321: "HalftoneHints",
+    324: "TileOffsets",
+    325: "TileByteCounts",
+    338: "ExtraSamples",
+    339: "SampleFormat",
+    342: "TransferRange",
+    529: "YCbCrCoefficients",
+    530: "YCbCrSubSampling",
+    532: "ReferenceBlackWhite",
     33550: "ModelPixelScaleTag",
     33920: "ModelTransformationTag",
     33922: "ModelTiepointTag",

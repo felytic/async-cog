@@ -8,7 +8,7 @@ from pydantic import PositiveInt
 
 from async_cog.ifd import IFD
 from async_cog.tags import BytesTag, FractionsTag, ListTag, NumberTag, StringTag, Tag
-from async_cog.tags.tag_code import GEOKEY_TAGS
+from async_cog.tags.tag_code import TagCode
 
 
 class COGReader:
@@ -290,11 +290,11 @@ class COGReader:
             )
 
         # GeoKeyDirectoryTag must be list tag because parsing it relies on indexing
-        elif length == 1 and code not in GEOKEY_TAGS:
-            tag = NumberTag(code=code, type=tag_type, data_pointer=pointer)
+        elif TagCode(code).is_list or length > 1:
+            tag = ListTag(code=code, type=tag_type, length=length, data_pointer=pointer)
 
         else:
-            tag = ListTag(code=code, type=tag_type, length=length, data_pointer=pointer)
+            tag = NumberTag(code=code, type=tag_type, data_pointer=pointer)
 
         # If tag data type fits into it's data pointer size, then last bytes contain
         # data, not it's pointer
