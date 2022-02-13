@@ -1,10 +1,11 @@
 # Thanks to mapbox/COGDumper for the mock data
 from fractions import Fraction
 from pathlib import Path
+from re import escape
 from typing import Any
 
-import pytest
 from aioresponses import CallbackResult, aioresponses
+from pytest import mark, raises
 
 from async_cog import COGReader
 from async_cog.ifd import IFD
@@ -28,7 +29,7 @@ def response_read(url: str, **kwargs: Any) -> CallbackResult:
         return CallbackResult(body=data, content_type="image/tiff")
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_read_header() -> None:
     url = "cog.tif"
 
@@ -39,7 +40,7 @@ async def test_read_header() -> None:
             assert not reader.is_bigtiff
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_read_bigtiff_header() -> None:
     url = "BigTIFF.tif"
 
@@ -50,7 +51,7 @@ async def test_read_bigtiff_header() -> None:
             assert reader.is_bigtiff
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_read_big_endian_header() -> None:
     url = "be_cog.tif"
 
@@ -61,29 +62,29 @@ async def test_read_big_endian_header() -> None:
             assert reader._byte_order_fmt == ">"
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_read_invalid_header() -> None:
     url = "invalid_cog.tif"
 
     with aioresponses() as mocked_response:
         mocked_response.get(url, callback=response_read, repeat=True)
 
-        with pytest.raises(ValueError, match="Invalid file format"):
+        with raises(ValueError, match="Invalid file format"):
             await COGReader(url).__aenter__()
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_read_invalid_endian() -> None:
     url = "invalid_endian.tif"
 
     with aioresponses() as mocked_response:
         mocked_response.get(url, callback=response_read, repeat=True)
 
-        with pytest.raises(ValueError, match="Invalid file format"):
+        with raises(ValueError, match="Invalid file format"):
             await COGReader(url).__aenter__()
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_read_ifds() -> None:
     tags = [
         {
@@ -193,7 +194,7 @@ async def test_read_ifds() -> None:
             ]
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_read_ifds_big_tiff() -> None:
     url = "BigTIFF.tif"
 
@@ -288,7 +289,7 @@ async def test_read_ifds_big_tiff() -> None:
     ]
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_fill_tag_data() -> None:
     url = "BigTIFF.tif"
 
@@ -300,7 +301,7 @@ async def test_fill_tag_data() -> None:
             await reader._fill_tag_with_data(tag)
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_tag_fractional() -> None:
     url = "be_cog.tif"
 
@@ -320,7 +321,7 @@ async def test_tag_fractional() -> None:
             ]
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_tag_ascii() -> None:
     url = "be_cog.tif"
 
@@ -333,7 +334,7 @@ async def test_tag_ascii() -> None:
             assert tag.value == "test"
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_parse_geokeys() -> None:
     url = "cog.tif"
 
@@ -353,7 +354,7 @@ async def test_parse_geokeys() -> None:
             assert ifd["ProjectedCSType"] == 3857
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_ifd_iter() -> None:
     url = "cog.tif"
 
@@ -362,3 +363,30 @@ async def test_ifd_iter() -> None:
 
         async with COGReader(url) as reader:
             assert [ifd for ifd in reader] == [ifd for ifd in reader._ifds]
+
+
+@mark.asyncio
+async def test_read_tile_data_raises() -> None:
+    url = "cog.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            with raises(
+                ValueError, match=escape("Tile (0, 0) on the level 5 doesn't exist")
+            ):
+                await reader._read_tile_data(5, 0, 0)
+
+
+@mark.asyncio
+async def test_read_tile_data() -> None:
+    url = "cog.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            data = await reader._read_tile_data(0, 0, 0)
+            assert isinstance(data, bytes)
+            assert len(data) == 4027

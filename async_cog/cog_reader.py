@@ -4,7 +4,7 @@ from struct import calcsize, pack, unpack
 from typing import Any, Iterator, List, Literal
 
 from aiohttp import ClientSession
-from pydantic import PositiveInt
+from pydantic import NonNegativeInt, PositiveInt
 
 from async_cog.ifd import IFD
 from async_cog.tags import BytesTag, FractionsTag, ListTag, NumberTag, StringTag, Tag
@@ -324,3 +324,18 @@ class COGReader:
             await self._fill_tag_with_data(tag)
 
         ifd.parse_geokeys()
+
+    async def _read_tile_data(
+        self, level: NonNegativeInt, x: NonNegativeInt, y: NonNegativeInt
+    ) -> bytes:
+        ifd = self._ifds[level]
+
+        if not ifd.has_tile(x, y):
+            raise ValueError(f"Tile ({x}, {y}) on the level {level} doesn't exist")
+
+        idx = ifd.get_tile_idx(x, y)
+
+        offset = ifd["TileOffsets"][idx]
+        size = ifd["TileByteCounts"][idx]
+
+        return await self._read(offset, size)
