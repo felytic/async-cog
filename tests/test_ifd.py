@@ -70,3 +70,29 @@ async def test_ifd_xy_tile_counts() -> None:
             ifd_5 = reader._ifds[5]  # IFD without TileWidth and ImageWidth properties
             assert ifd_5.x_tile_count == 0
             assert ifd_5.y_tile_count == 0
+
+
+@pytest.mark.asyncio
+async def test_ifd_has_tile() -> None:
+    url = "cog.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            assert reader._ifds[0].has_tile(0, 0)
+            assert not reader._ifds[0].has_tile(1, 0)
+
+            assert reader._ifds[1].has_tile(0, 0)
+            assert not reader._ifds[1].has_tile(0, 1)
+
+            assert reader._ifds[2].has_tile(0, 0)
+            assert not reader._ifds[2].has_tile(2, 2)
+
+            assert reader._ifds[3].has_tile(0, 0)
+            assert not reader._ifds[3].has_tile(1, 1)
+
+            assert reader._ifds[4].has_tile(0, 0)
+            assert not reader._ifds[4].has_tile(0, 7)
+
+            assert not reader._ifds[5].has_tile(0, 0)

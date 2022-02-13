@@ -48,6 +48,9 @@ class IFD(BaseModel):
         geokeys = {geokey.name: geokey.value for geokey in self.geokeys.values()}
         return {**tags, **geokeys}
 
+    def get_tile_idx(self, x: NonNegativeInt, y: NonNegativeInt) -> NonNegativeInt:
+        return (y * self.x_tile_count) + x
+
     @property
     def x_tile_count(self) -> NonNegativeInt:
         if not self.get("ImageWidth") or not self.get("TileWidth"):
@@ -61,6 +64,16 @@ class IFD(BaseModel):
             return 0
 
         return ceil(self["ImageHeight"] / self["TileHeight"])
+
+    def has_tile(self, x: NonNegativeInt, y: NonNegativeInt) -> bool:
+        idx = self.get_tile_idx(x, y)
+        tile_offsets = self.get("TileOffsets", [])
+        tile_byte_counts = self.get("TileByteCounts", [])
+
+        tile_exist = self.x_tile_count > 0 and self.y_tile_count > 0
+        tile_data_exist = len(tile_offsets) > idx and len(tile_byte_counts) > idx
+
+        return tile_exist and tile_data_exist
 
     def parse_geokeys(self) -> None:
         """
