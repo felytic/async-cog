@@ -11,4 +11,4 @@ class NumberTag(Tag):
     length: PositiveInt = 1
 
     def parse_data(self, data: bytes, byte_order_fmt: Literal["<", ">"]) -> None:
-        (self.value,) = list(unpack(f"{byte_order_fmt}{self.format_str}", data))
+        (self.value,) = unpack(f"{byte_order_fmt}{self.format_str}", data)

@@ -4,11 +4,11 @@ from struct import calcsize, pack, unpack
 from typing import Any, Iterator, List, Literal
 
 from aiohttp import ClientSession
-from pydantic import PositiveInt
+from pydantic import NonNegativeInt, PositiveInt
 
 from async_cog.ifd import IFD
 from async_cog.tags import BytesTag, FractionsTag, ListTag, NumberTag, StringTag, Tag
-from async_cog.tags.tag_code import GEOKEY_TAGS
+from async_cog.tags.tag_code import TagCode
 
 
 class COGReader:
@@ -25,6 +25,10 @@ class COGReader:
     def __init__(self, url: str):
         self._url: str = url
         self._ifds = []
+
+    def __iter__(self) -> Iterator[IFD]:
+        for ifd in self._ifds:
+            yield ifd
 
     async def __aenter__(self) -> COGReader:
         """
@@ -286,11 +290,11 @@ class COGReader:
             )
 
         # GeoKeyDirectoryTag must be list tag because parsing it relies on indexing
-        elif length == 1 and code not in GEOKEY_TAGS:
-            tag = NumberTag(code=code, type=tag_type, data_pointer=pointer)
+        elif TagCode(code).is_list or length > 1:
+            tag = ListTag(code=code, type=tag_type, length=length, data_pointer=pointer)
 
         else:
-            tag = ListTag(code=code, type=tag_type, length=length, data_pointer=pointer)
+            tag = NumberTag(code=code, type=tag_type, data_pointer=pointer)
 
         # If tag data type fits into it's data pointer size, then last bytes contain
         # data, not it's pointer
@@ -320,3 +324,18 @@ class COGReader:
             await self._fill_tag_with_data(tag)
 
         ifd.parse_geokeys()
+
+    async def _read_tile_data(
+        self, level: NonNegativeInt, x: NonNegativeInt, y: NonNegativeInt
+    ) -> bytes:
+        ifd = self._ifds[level]
+
+        if not ifd.has_tile(x, y):
+            raise ValueError(f"Tile ({x}, {y}) on the level {level} doesn't exist")
+
+        idx = ifd.get_tile_idx(x, y)
+
+        offset = ifd["TileOffsets"][idx]
+        size = ifd["TileByteCounts"][idx]
+
+        return await self._read(offset, size)

@@ -1,10 +1,11 @@
 # Thanks to mapbox/COGDumper for the mock data
 from fractions import Fraction
 from pathlib import Path
+from re import escape
 from typing import Any
 
-import pytest
 from aioresponses import CallbackResult, aioresponses
+from pytest import mark, raises
 
 from async_cog import COGReader
 from async_cog.ifd import IFD
@@ -28,7 +29,7 @@ def response_read(url: str, **kwargs: Any) -> CallbackResult:
         return CallbackResult(body=data, content_type="image/tiff")
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_read_header() -> None:
     url = "cog.tif"
 
@@ -39,7 +40,7 @@ async def test_read_header() -> None:
             assert not reader.is_bigtiff
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_read_bigtiff_header() -> None:
     url = "BigTIFF.tif"
 
@@ -50,7 +51,7 @@ async def test_read_bigtiff_header() -> None:
             assert reader.is_bigtiff
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_read_big_endian_header() -> None:
     url = "be_cog.tif"
 
@@ -61,106 +62,106 @@ async def test_read_big_endian_header() -> None:
             assert reader._byte_order_fmt == ">"
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_read_invalid_header() -> None:
     url = "invalid_cog.tif"
 
     with aioresponses() as mocked_response:
         mocked_response.get(url, callback=response_read, repeat=True)
 
-        with pytest.raises(ValueError, match="Invalid file format"):
+        with raises(ValueError, match="Invalid file format"):
             await COGReader(url).__aenter__()
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_read_invalid_endian() -> None:
     url = "invalid_endian.tif"
 
     with aioresponses() as mocked_response:
         mocked_response.get(url, callback=response_read, repeat=True)
 
-        with pytest.raises(ValueError, match="Invalid file format"):
+        with raises(ValueError, match="Invalid file format"):
             await COGReader(url).__aenter__()
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_read_ifds() -> None:
     tags = [
         {
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=64),
-            "ImageLength": NumberTag(code=257, type=3, length=1, value=64),
+            "ImageHeight": NumberTag(code=257, type=3, length=1, value=64),
             "BitsPerSample": ListTag(code=258, type=3, length=3, data_pointer=170),
             "Compression": NumberTag(code=259, type=3, length=1, value=7),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
-            "PlanarConfiguration": NumberTag(code=284, type=3, length=1, value=1),
+            "UNKNOWN TAG 8476": ListTag(code=8476, type=3, length=1, value=[1]),
             "TileWidth": NumberTag(code=322, type=3, length=1, value=256),
-            "TileLength": NumberTag(code=323, type=3, length=1, value=256),
-            "TileOffsets": NumberTag(code=324, type=4, length=1, value=255),
-            "TileByteCounts": NumberTag(code=325, type=4, length=1, value=4027),
+            "TileHeight": NumberTag(code=323, type=3, length=1, value=256),
+            "TileOffsets": ListTag(code=324, type=4, length=1, value=[255]),
+            "TileByteCounts": ListTag(code=325, type=4, length=1, value=[4027]),
             "SampleFormat": ListTag(code=339, type=3, length=3, data_pointer=176),
             "JPEGTables": BytesTag(code=347, type=7, length=73, data_pointer=182),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=32),
-            "ImageLength": NumberTag(code=257, type=3, length=1, value=32),
+            "ImageHeight": NumberTag(code=257, type=3, length=1, value=32),
             "BitsPerSample": ListTag(code=258, type=3, length=3, data_pointer=4456),
             "Compression": NumberTag(code=259, type=3, length=1, value=7),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
             "PlanarConfiguration": NumberTag(code=284, type=3, length=1, value=1),
             "TileWidth": NumberTag(code=322, type=3, length=1, value=128),
-            "TileLength": NumberTag(code=323, type=3, length=1, value=128),
-            "TileOffsets": NumberTag(code=324, type=4, length=1, value=5321),
-            "TileByteCounts": NumberTag(code=325, type=4, length=1, value=2263),
+            "TileHeight": NumberTag(code=323, type=3, length=1, value=128),
+            "TileOffsets": ListTag(code=324, type=4, length=1, value=[5321]),
+            "TileByteCounts": ListTag(code=325, type=4, length=1, value=[2263]),
             "SampleFormat": ListTag(code=339, type=3, length=3, data_pointer=4462),
             "JPEGTables": BytesTag(code=347, type=7, length=73, data_pointer=4468),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=16),
-            "ImageLength": NumberTag(code=257, type=3, length=1, value=16),
+            "ImageHeight": NumberTag(code=257, type=3, length=1, value=16),
             "BitsPerSample": ListTag(code=258, type=3, length=3, data_pointer=4716),
             "Compression": NumberTag(code=259, type=3, length=1, value=7),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
             "PlanarConfiguration": NumberTag(code=284, type=3, length=1, value=1),
             "TileWidth": NumberTag(code=322, type=3, length=1, value=128),
-            "TileLength": NumberTag(code=323, type=3, length=1, value=128),
-            "TileOffsets": NumberTag(code=324, type=4, length=1, value=7584),
-            "TileByteCounts": NumberTag(code=325, type=4, length=1, value=996),
+            "TileHeight": NumberTag(code=323, type=3, length=1, value=128),
+            "TileOffsets": ListTag(code=324, type=4, length=1, value=[7584]),
+            "TileByteCounts": ListTag(code=325, type=4, length=1, value=[996]),
             "SampleFormat": ListTag(code=339, type=3, length=3, data_pointer=4722),
             "JPEGTables": BytesTag(code=347, type=7, length=73, data_pointer=4728),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=8),
-            "ImageLength": NumberTag(code=257, type=3, length=1, value=8),
+            "ImageHeight": NumberTag(code=257, type=3, length=1, value=8),
             "BitsPerSample": ListTag(code=258, type=3, length=3, data_pointer=4976),
             "Compression": NumberTag(code=259, type=3, length=1, value=7),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
             "PlanarConfiguration": NumberTag(code=284, type=3, length=1, value=1),
             "TileWidth": NumberTag(code=322, type=3, length=1, value=128),
-            "TileLength": NumberTag(code=323, type=3, length=1, value=128),
-            "TileOffsets": NumberTag(code=324, type=4, length=1, value=8580),
-            "TileByteCounts": NumberTag(code=325, type=4, length=1, value=935),
+            "TileHeight": NumberTag(code=323, type=3, length=1, value=128),
+            "TileOffsets": ListTag(code=324, type=4, length=1, value=[8580]),
+            "TileByteCounts": ListTag(code=325, type=4, length=1, value=[935]),
             "SampleFormat": ListTag(code=339, type=3, length=3, data_pointer=4982),
             "JPEGTables": BytesTag(code=347, type=7, length=73, data_pointer=4988),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=4),
-            "ImageLength": NumberTag(code=257, type=3, length=1, value=4),
+            "ImageHeight": NumberTag(code=257, type=3, length=1, value=4),
             "BitsPerSample": ListTag(code=258, type=3, length=3, data_pointer=5236),
             "Compression": NumberTag(code=259, type=3, length=1, value=7),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
             "PlanarConfiguration": NumberTag(code=284, type=3, length=1, value=1),
             "TileWidth": NumberTag(code=322, type=3, length=1, value=128),
-            "TileLength": NumberTag(code=323, type=3, length=1, value=128),
-            "TileOffsets": NumberTag(code=324, type=4, length=1, value=9515),
-            "TileByteCounts": NumberTag(code=325, type=4, length=1, value=1318),
+            "TileHeight": NumberTag(code=323, type=3, length=1, value=128),
+            "TileOffsets": ListTag(code=324, type=4, length=1, value=[9515]),
+            "TileByteCounts": ListTag(code=325, type=4, length=1, value=[1318]),
             "SampleFormat": ListTag(code=339, type=3, length=3, data_pointer=5242),
             "JPEGTables": BytesTag(code=347, type=7, length=73, data_pointer=5248),
         },
@@ -193,83 +194,83 @@ async def test_read_ifds() -> None:
             ]
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_read_ifds_big_tiff() -> None:
     url = "BigTIFF.tif"
 
     tags = [
         {
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=64),
-            "ImageLength": NumberTag(code=257, type=3, length=1, value=64),
+            "ImageHeight": NumberTag(code=257, type=3, length=1, value=64),
             "BitsPerSample": ListTag(code=258, type=3, length=3, value=[8, 8, 8]),
             "Compression": NumberTag(code=259, type=3, length=1, value=1),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
             "PlanarConfiguration": NumberTag(code=284, type=3, length=1, value=1),
             "TileWidth": NumberTag(code=322, type=3, length=1, value=256),
-            "TileLength": NumberTag(code=323, type=3, length=1, value=256),
-            "TileOffsets": NumberTag(code=324, type=16, length=1, value=272),
-            "TileByteCounts": NumberTag(code=325, type=16, length=1, value=196608),
+            "TileHeight": NumberTag(code=323, type=3, length=1, value=256),
+            "TileOffsets": ListTag(code=324, type=16, length=1, value=[272]),
+            "TileByteCounts": ListTag(code=325, type=16, length=1, value=[196608]),
             "SampleFormat": ListTag(code=339, type=3, length=3, value=[1, 1, 1]),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=32),
-            "ImageLength": NumberTag(code=257, type=3, length=1, value=32),
+            "ImageHeight": NumberTag(code=257, type=3, length=1, value=32),
             "BitsPerSample": ListTag(code=258, type=3, length=3, value=[8, 8, 8]),
             "Compression": NumberTag(code=259, type=3, length=1, value=1),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
             "PlanarConfiguration": NumberTag(code=284, type=3, length=1, value=1),
             "TileWidth": NumberTag(code=322, type=3, length=1, value=128),
-            "TileLength": NumberTag(code=323, type=3, length=1, value=128),
-            "TileOffsets": NumberTag(code=324, type=16, length=1, value=197984),
-            "TileByteCounts": NumberTag(code=325, type=16, length=1, value=49152),
+            "TileHeight": NumberTag(code=323, type=3, length=1, value=128),
+            "TileOffsets": ListTag(code=324, type=16, length=1, value=[197984]),
+            "TileByteCounts": ListTag(code=325, type=16, length=1, value=[49152]),
             "SampleFormat": ListTag(code=339, type=3, length=3, value=[1, 1, 1]),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=16),
-            "ImageLength": NumberTag(code=257, type=3, length=1, value=16),
+            "ImageHeight": NumberTag(code=257, type=3, length=1, value=16),
             "BitsPerSample": ListTag(code=258, type=3, length=3, value=[8, 8, 8]),
             "Compression": NumberTag(code=259, type=3, length=1, value=1),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
             "PlanarConfiguration": NumberTag(code=284, type=3, length=1, value=1),
             "TileWidth": NumberTag(code=322, type=3, length=1, value=128),
-            "TileLength": NumberTag(code=323, type=3, length=1, value=128),
-            "TileOffsets": NumberTag(code=324, type=16, length=1, value=247136),
-            "TileByteCounts": NumberTag(code=325, type=16, length=1, value=49152),
+            "TileHeight": NumberTag(code=323, type=3, length=1, value=128),
+            "TileOffsets": ListTag(code=324, type=16, length=1, value=[247136]),
+            "TileByteCounts": ListTag(code=325, type=16, length=1, value=[49152]),
             "SampleFormat": ListTag(code=339, type=3, length=3, value=[1, 1, 1]),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=8),
-            "ImageLength": NumberTag(code=257, type=3, length=1, value=8),
+            "ImageHeight": NumberTag(code=257, type=3, length=1, value=8),
             "BitsPerSample": ListTag(code=258, type=3, length=3, value=[8, 8, 8]),
             "Compression": NumberTag(code=259, type=3, length=1, value=1),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
             "PlanarConfiguration": NumberTag(code=284, type=3, length=1, value=1),
             "TileWidth": NumberTag(code=322, type=3, length=1, value=128),
-            "TileLength": NumberTag(code=323, type=3, length=1, value=128),
-            "TileOffsets": NumberTag(code=324, type=16, length=1, value=296288),
-            "TileByteCounts": NumberTag(code=325, type=16, length=1, value=49152),
+            "TileHeight": NumberTag(code=323, type=3, length=1, value=128),
+            "TileOffsets": ListTag(code=324, type=16, length=1, value=[296288]),
+            "TileByteCounts": ListTag(code=325, type=16, length=1, value=[49152]),
             "SampleFormat": ListTag(code=339, type=3, length=3, value=[1, 1, 1]),
         },
         {
             "NewSubfileType": NumberTag(code=254, type=4, length=1, value=1),
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=4),
-            "ImageLength": NumberTag(code=257, type=3, length=1, value=4),
+            "ImageHeight": NumberTag(code=257, type=3, length=1, value=4),
             "BitsPerSample": ListTag(code=258, type=3, length=3, value=[8, 8, 8]),
             "Compression": NumberTag(code=259, type=3, length=1, value=1),
             "PhotometricInterpretation": NumberTag(code=262, type=3, length=1, value=2),
             "SamplesPerPixel": NumberTag(code=277, type=3, length=1, value=3),
             "PlanarConfiguration": NumberTag(code=284, type=3, length=1, value=1),
             "TileWidth": NumberTag(code=322, type=3, length=1, value=128),
-            "TileLength": NumberTag(code=323, type=3, length=1, value=128),
-            "TileOffsets": NumberTag(code=324, type=16, length=1, value=345440),
-            "TileByteCounts": NumberTag(code=325, type=16, length=1, value=49152),
+            "TileHeight": NumberTag(code=323, type=3, length=1, value=128),
+            "TileOffsets": ListTag(code=324, type=16, length=1, value=[345440]),
+            "TileByteCounts": ListTag(code=325, type=16, length=1, value=[49152]),
             "SampleFormat": ListTag(code=339, type=3, length=3, value=[1, 1, 1]),
         },
     ]
@@ -288,7 +289,7 @@ async def test_read_ifds_big_tiff() -> None:
     ]
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_fill_tag_data() -> None:
     url = "BigTIFF.tif"
 
@@ -300,7 +301,7 @@ async def test_fill_tag_data() -> None:
             await reader._fill_tag_with_data(tag)
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_tag_fractional() -> None:
     url = "be_cog.tif"
 
@@ -320,7 +321,7 @@ async def test_tag_fractional() -> None:
             ]
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_tag_ascii() -> None:
     url = "be_cog.tif"
 
@@ -333,7 +334,7 @@ async def test_tag_ascii() -> None:
             assert tag.value == "test"
 
 
-@pytest.mark.asyncio
+@mark.asyncio
 async def test_parse_geokeys() -> None:
     url = "cog.tif"
 
@@ -351,3 +352,41 @@ async def test_parse_geokeys() -> None:
             assert ifd["GeogPrimeMeridian"] == 1.3
             assert ifd["ProjLinearUnits"] == 37378
             assert ifd["ProjectedCSType"] == 3857
+
+
+@mark.asyncio
+async def test_ifd_iter() -> None:
+    url = "cog.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            assert [ifd for ifd in reader] == [ifd for ifd in reader._ifds]
+
+
+@mark.asyncio
+async def test_read_tile_data_raises() -> None:
+    url = "cog.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            with raises(
+                ValueError, match=escape("Tile (0, 0) on the level 5 doesn't exist")
+            ):
+                await reader._read_tile_data(5, 0, 0)
+
+
+@mark.asyncio
+async def test_read_tile_data() -> None:
+    url = "cog.tif"
+
+    with aioresponses() as mocked_response:
+        mocked_response.get(url, callback=response_read, repeat=True)
+
+        async with COGReader(url) as reader:
+            data = await reader._read_tile_data(0, 0, 0)
+            assert isinstance(data, bytes)
+            assert len(data) == 4027
