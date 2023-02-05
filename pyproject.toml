@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "async-cog"
-version = "0.2.0"
+version = "0.2.1"
 description = "Async library for Cloud-Optimised GeoTIFF"
 authors = ["Serhii Hulko <3834080+felytic@users.noreply.github.com>"]
 license = "MIT"
@@ -42,7 +42,6 @@ paths = ["."]
 sort_by_size = true
 
 [tool.mypy]
-strict = true
 ignore_missing_imports = true
 
 [tool.isort]
