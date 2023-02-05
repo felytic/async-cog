@@ -2,6 +2,7 @@
 from fractions import Fraction
 from re import escape
 
+import numpy as np
 from pytest import mark, raises
 
 from async_cog import COGReader
@@ -294,17 +295,20 @@ async def test_ifd_iter(mocked_reader) -> None:
 
 
 @mark.asyncio
-async def test_read_tile_data_raises(mocked_reader) -> None:
+async def test_read_tile_image_raises(mocked_reader) -> None:
     async with mocked_reader("cog.tif") as reader:
         with raises(
                 ValueError, match=escape("Tile (0, 0) on the level 5 doesn't exist")
         ):
-            await reader._read_tile_data(5, 0, 0)
+            await reader.get_tile_image(5, 0, 0)
 
 
 @mark.asyncio
-async def test_read_tile_data(mocked_reader) -> None:
-    async with mocked_reader("cog.tif") as reader:
-        data = await reader._read_tile_data(0, 0, 0)
-        assert isinstance(data, bytes)
-        assert len(data) == 4027
+async def test_read_tile_image_uncompressed(mocked_reader) -> None:
+    async with mocked_reader("BigTIFF.tif") as reader:
+        image = await reader.get_tile_image(0, 0, 0)
+
+        assert isinstance(image, np.ndarray)
+        assert all(image[0][0] == [255, 0, 0])
+        assert image.dtype == np.uint8
+        assert image.shape == (256, 256, 3)

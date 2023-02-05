@@ -3,9 +3,11 @@ from __future__ import annotations
 from struct import calcsize, pack, unpack
 from typing import Any, Iterator, List, Literal
 
+import numpy as np
 from aiohttp import ClientSession
 from pydantic import NonNegativeInt, PositiveInt
 
+from async_cog.decoders import DECODERS_MAPPING
 from async_cog.ifd import IFD
 from async_cog.tags import BytesTag, FractionsTag, ListTag, NumberTag, StringTag, Tag
 from async_cog.tags.tag_code import TagCode
@@ -325,17 +327,29 @@ class COGReader:
 
         ifd.parse_geokeys()
 
-    async def _read_tile_data(
-        self, level: NonNegativeInt, x: NonNegativeInt, y: NonNegativeInt
+    async def _read_tile_bytes(
+        self, ifd: IFD, x: NonNegativeInt, y: NonNegativeInt
     ) -> bytes:
-        ifd = self._ifds[level]
-
-        if not ifd.has_tile(x, y):
-            raise ValueError(f"Tile ({x}, {y}) on the level {level} doesn't exist")
-
         idx = ifd.get_tile_idx(x, y)
 
         offset = ifd["TileOffsets"][idx]
         size = ifd["TileByteCounts"][idx]
 
         return await self._read(offset, size)
+
+    async def get_tile_image(
+        self, level: NonNegativeInt, x: NonNegativeInt, y: NonNegativeInt
+    ) -> np.ndarray:
+        ifd = self._ifds[level]
+
+        await self._fill_ifd_with_data(ifd)
+
+        if not ifd.has_tile(x, y):
+            raise ValueError(f"Tile ({x}, {y}) on the level {level} doesn't exist")
+
+        compression = ifd["Compression"]
+
+        decoder = DECODERS_MAPPING[compression]
+        data = await self._read_tile_bytes(ifd, x, y)
+
+        return decoder(ifd, data)
