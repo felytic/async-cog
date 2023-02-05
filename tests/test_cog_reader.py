@@ -1,10 +1,7 @@
 # Thanks to mapbox/COGDumper for the mock data
 from fractions import Fraction
-from pathlib import Path
 from re import escape
-from typing import Any
 
-from aioresponses import CallbackResult, aioresponses
 from pytest import mark, raises
 
 from async_cog import COGReader
@@ -19,73 +16,38 @@ def test_constructor() -> None:
     assert reader.url == url
 
 
-def response_read(url: str, **kwargs: Any) -> CallbackResult:
-    path = (Path.cwd() / Path(__file__).parent).resolve()
-    with open(path / "mock_data" / str(url), "rb") as file:
-        range_header = kwargs["headers"]["Range"]
-        offset_start, offset_end = map(int, range_header.split("bytes=")[1].split("-"))
-        file.seek(offset_start)
-        data = file.read(offset_end - offset_start + 1)
-        return CallbackResult(body=data, content_type="image/tiff")
+@mark.asyncio
+async def test_read_header(mocked_reader) -> None:
+    async with mocked_reader("cog.tif") as reader:
+        assert not reader.is_bigtiff
 
 
 @mark.asyncio
-async def test_read_header() -> None:
-    url = "cog.tif"
-
-    with aioresponses() as mocked_response:
-        mocked_response.get(url, callback=response_read, repeat=True)
-
-        async with COGReader(url) as reader:
-            assert not reader.is_bigtiff
+async def test_read_bigtiff_header(mocked_reader) -> None:
+    async with mocked_reader("BigTIFF.tif") as reader:
+        assert reader.is_bigtiff
 
 
 @mark.asyncio
-async def test_read_bigtiff_header() -> None:
-    url = "BigTIFF.tif"
-
-    with aioresponses() as mocked_response:
-        mocked_response.get(url, callback=response_read, repeat=True)
-
-        async with COGReader(url) as reader:
-            assert reader.is_bigtiff
+async def test_read_big_endian_header(mocked_reader) -> None:
+    async with mocked_reader("be_cog.tif") as reader:
+        assert reader._byte_order_fmt == ">"
 
 
 @mark.asyncio
-async def test_read_big_endian_header() -> None:
-    url = "be_cog.tif"
-
-    with aioresponses() as mocked_response:
-        mocked_response.get(url, callback=response_read, repeat=True)
-
-        async with COGReader(url) as reader:
-            assert reader._byte_order_fmt == ">"
+async def test_read_invalid_header(mocked_reader) -> None:
+    with raises(ValueError, match="Invalid file format"):
+        await mocked_reader("invalid_cog.tif").__aenter__()
 
 
 @mark.asyncio
-async def test_read_invalid_header() -> None:
-    url = "invalid_cog.tif"
-
-    with aioresponses() as mocked_response:
-        mocked_response.get(url, callback=response_read, repeat=True)
-
-        with raises(ValueError, match="Invalid file format"):
-            await COGReader(url).__aenter__()
+async def test_read_invalid_endian(mocked_reader) -> None:
+    with raises(ValueError, match="Invalid file format"):
+        await mocked_reader("invalid_endian.tif").__aenter__()
 
 
 @mark.asyncio
-async def test_read_invalid_endian() -> None:
-    url = "invalid_endian.tif"
-
-    with aioresponses() as mocked_response:
-        mocked_response.get(url, callback=response_read, repeat=True)
-
-        with raises(ValueError, match="Invalid file format"):
-            await COGReader(url).__aenter__()
-
-
-@mark.asyncio
-async def test_read_ifds() -> None:
+async def test_read_ifds(mocked_reader) -> None:
     tags = [
         {
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=64),
@@ -178,26 +140,19 @@ async def test_read_ifds() -> None:
         },
     ]
 
-    url = "cog.tif"
-
-    with aioresponses() as mocked_response:
-        mocked_response.get(url, callback=response_read, repeat=True)
-
-        async with COGReader(url) as reader:
-            assert reader._ifds == [
-                IFD(pointer=8, n_tags=13, next_ifd_pointer=4282, tags=tags[0]),
-                IFD(pointer=4282, n_tags=14, next_ifd_pointer=4542, tags=tags[1]),
-                IFD(pointer=4542, n_tags=14, next_ifd_pointer=4802, tags=tags[2]),
-                IFD(pointer=4802, n_tags=14, next_ifd_pointer=5062, tags=tags[3]),
-                IFD(pointer=5062, n_tags=14, next_ifd_pointer=10833, tags=tags[4]),
-                IFD(pointer=10833, n_tags=3, next_ifd_pointer=0, tags=tags[5]),
-            ]
+    async with mocked_reader("cog.tif") as reader:
+        assert reader._ifds == [
+            IFD(pointer=8, n_tags=13, next_ifd_pointer=4282, tags=tags[0]),
+            IFD(pointer=4282, n_tags=14, next_ifd_pointer=4542, tags=tags[1]),
+            IFD(pointer=4542, n_tags=14, next_ifd_pointer=4802, tags=tags[2]),
+            IFD(pointer=4802, n_tags=14, next_ifd_pointer=5062, tags=tags[3]),
+            IFD(pointer=5062, n_tags=14, next_ifd_pointer=10833, tags=tags[4]),
+            IFD(pointer=10833, n_tags=3, next_ifd_pointer=0, tags=tags[5]),
+        ]
 
 
 @mark.asyncio
-async def test_read_ifds_big_tiff() -> None:
-    url = "BigTIFF.tif"
-
+async def test_read_ifds_big_tiff(mocked_reader) -> None:
     tags = [
         {
             "ImageWidth": NumberTag(code=256, type=3, length=1, value=64),
@@ -274,11 +229,9 @@ async def test_read_ifds_big_tiff() -> None:
             "SampleFormat": ListTag(code=339, type=3, length=3, value=[1, 1, 1]),
         },
     ]
-    with aioresponses() as mocked_response:
-        mocked_response.get(url, callback=response_read, repeat=True)
 
-        async with COGReader(url) as reader:
-            ifds = reader._ifds
+    async with mocked_reader("BigTIFF.tif") as reader:
+        ifds = reader._ifds
 
     assert ifds == [
         IFD(pointer=16, n_tags=12, next_ifd_pointer=196880, tags=tags[0]),
@@ -290,103 +243,68 @@ async def test_read_ifds_big_tiff() -> None:
 
 
 @mark.asyncio
-async def test_fill_tag_data() -> None:
-    url = "BigTIFF.tif"
-
-    with aioresponses() as mocked_response:
-        mocked_response.get(url, callback=response_read, repeat=True)
-
-        async with COGReader(url) as reader:
-            tag = ListTag(code=258, type=3, length=3, data_pointer=170)
-            await reader._fill_tag_with_data(tag)
+async def test_fill_tag_data(mocked_reader) -> None:
+    async with mocked_reader("BigTIFF.tif") as reader:
+        tag = ListTag(code=258, type=3, length=3, data_pointer=170)
+        await reader._fill_tag_with_data(tag)
 
 
 @mark.asyncio
-async def test_tag_fractional() -> None:
-    url = "be_cog.tif"
-
-    with aioresponses() as mocked_response:
-        mocked_response.get(url, callback=response_read, repeat=True)
-
-        async with COGReader(url) as reader:
-            tag = reader._ifds[0].tags["ReferenceBlackWhite"]
-            await reader._fill_tag_with_data(tag)
-            assert tag.value == [
-                Fraction(0, 1),
-                Fraction(255, 1),
-                Fraction(128, 1),
-                Fraction(255, 1),
-                Fraction(128, 1),
-                Fraction(255, 1),
-            ]
+async def test_tag_fractional(mocked_reader) -> None:
+    async with mocked_reader("be_cog.tif") as reader:
+        tag = reader._ifds[0].tags["ReferenceBlackWhite"]
+        await reader._fill_tag_with_data(tag)
+        assert tag.value == [
+            Fraction(0, 1),
+            Fraction(255, 1),
+            Fraction(128, 1),
+            Fraction(255, 1),
+            Fraction(128, 1),
+            Fraction(255, 1),
+        ]
 
 
 @mark.asyncio
-async def test_tag_ascii() -> None:
-    url = "be_cog.tif"
-
-    with aioresponses() as mocked_response:
-        mocked_response.get(url, callback=response_read, repeat=True)
-
-        async with COGReader(url) as reader:
-            tag = reader._ifds[1].tags["NewSubfileType"]
-            await reader._fill_tag_with_data(tag)
-            assert tag.value == "test"
+async def test_tag_ascii(mocked_reader) -> None:
+    async with mocked_reader("be_cog.tif") as reader:
+        tag = reader._ifds[1].tags["NewSubfileType"]
+        await reader._fill_tag_with_data(tag)
+        assert tag.value == "test"
 
 
 @mark.asyncio
-async def test_parse_geokeys() -> None:
-    url = "cog.tif"
+async def test_parse_geokeys(mocked_reader) -> None:
+    async with mocked_reader("cog.tif") as reader:
+        ifd = reader._ifds[5]
 
-    with aioresponses() as mocked_response:
-        mocked_response.get(url, callback=response_read, repeat=True)
-
-        async with COGReader(url) as reader:
-            ifd = reader._ifds[5]
-
-            await reader._fill_ifd_with_data(ifd)
-            assert ifd["GTCitation"] == "WGS 84 / Pseudo-Mercator"
-            assert ifd["GTModelType"] == 1
-            assert ifd["GTRasterType"] == 1
-            assert ifd["GeogCitation"] == "WGS 84"
-            assert ifd["GeogPrimeMeridian"] == 1.3
-            assert ifd["ProjLinearUnits"] == 37378
-            assert ifd["ProjectedCSType"] == 3857
+        await reader._fill_ifd_with_data(ifd)
+        assert ifd["GTCitation"] == "WGS 84 / Pseudo-Mercator"
+        assert ifd["GTModelType"] == 1
+        assert ifd["GTRasterType"] == 1
+        assert ifd["GeogCitation"] == "WGS 84"
+        assert ifd["GeogPrimeMeridian"] == 1.3
+        assert ifd["ProjLinearUnits"] == 37378
+        assert ifd["ProjectedCSType"] == 3857
 
 
 @mark.asyncio
-async def test_ifd_iter() -> None:
-    url = "cog.tif"
-
-    with aioresponses() as mocked_response:
-        mocked_response.get(url, callback=response_read, repeat=True)
-
-        async with COGReader(url) as reader:
-            assert [ifd for ifd in reader] == [ifd for ifd in reader._ifds]
+async def test_ifd_iter(mocked_reader) -> None:
+    async with mocked_reader("cog.tif") as reader:
+        assert [ifd for ifd in reader] == [ifd for ifd in reader._ifds]
 
 
 @mark.asyncio
-async def test_read_tile_data_raises() -> None:
-    url = "cog.tif"
-
-    with aioresponses() as mocked_response:
-        mocked_response.get(url, callback=response_read, repeat=True)
-
-        async with COGReader(url) as reader:
-            with raises(
+async def test_read_tile_data_raises(mocked_reader) -> None:
+    async with mocked_reader("cog.tif") as reader:
+        with raises(
                 ValueError, match=escape("Tile (0, 0) on the level 5 doesn't exist")
-            ):
-                await reader._read_tile_data(5, 0, 0)
+        ):
+            await reader._read_tile_data(5, 0, 0)
 
 
 @mark.asyncio
-async def test_read_tile_data() -> None:
-    url = "cog.tif"
-
-    with aioresponses() as mocked_response:
-        mocked_response.get(url, callback=response_read, repeat=True)
-
-        async with COGReader(url) as reader:
-            data = await reader._read_tile_data(0, 0, 0)
-            assert isinstance(data, bytes)
-            assert len(data) == 4027
+async def test_read_tile_data(mocked_reader) -> None:
+    async with mocked_reader("cog.tif") as reader:
+        data = await reader._read_tile_data(0, 0, 0)
+        assert isinstance(data, bytes)
+        assert len(data) == 4027
