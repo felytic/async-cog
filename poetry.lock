@@ -253,6 +253,20 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
+name = "imagecodecs"
+version = "2022.2.22"
+description = "Image transformation, compression, and decompression codecs"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+
+[package.dependencies]
+numpy = ">=1.19.2"
+
+[package.extras]
+all = ["matplotlib (>=3.3)", "tifffile (>=2021.11.2)", "numcodecs"]
+
+[[package]]
 name = "iniconfig"
 version = "1.1.1"
 description = "iniconfig: brain-dead simple config-ini parsing"
@@ -337,6 +351,14 @@ description = "Node.js virtual environment builder"
 category = "dev"
 optional = false
 python-versions = "*"
+
+[[package]]
+name = "numpy"
+version = "1.22.3"
+description = "NumPy is the fundamental package for array computing with Python."
+category = "main"
+optional = false
+python-versions = ">=3.8"
 
 [[package]]
 name = "packaging"
@@ -728,7 +750,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "dd87d55753ee8f6353c721f36448f34b5c8360188c3716f70685269139c97000"
+content-hash = "122fba0ff2ea12dc25fddb5b4d27e91bcdda31041f593c4de1753c1939351e1c"
 
 [metadata.files]
 aiohttp = [
@@ -1004,6 +1026,25 @@ idna = [
     {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},
     {file = "idna-3.3.tar.gz", hash = "sha256:9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"},
 ]
+imagecodecs = [
+    {file = "imagecodecs-2022.2.22-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:48bb7e15bd21e1f40bf0c850c5350e1d7e465589ddd3314f20810305dde06f6d"},
+    {file = "imagecodecs-2022.2.22-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1d8ed85a73dccd286cc4ca4fa67961a76f109cd082bc329e0a067dcc3b176e4e"},
+    {file = "imagecodecs-2022.2.22-cp310-cp310-win32.whl", hash = "sha256:001f1fc6e3c4305a291cd9c77026460090447607ef31c3b59152fe7e5d3f0102"},
+    {file = "imagecodecs-2022.2.22-cp310-cp310-win_amd64.whl", hash = "sha256:d62e1661a2feee3de069f26dea635f0e5e77d860d70bd6806b574419c0e73a40"},
+    {file = "imagecodecs-2022.2.22-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:2b68537d70acab8b13f039c248fc070463eea5192d7277e4b6284631e7e64290"},
+    {file = "imagecodecs-2022.2.22-cp38-cp38-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:eed93f43e2a950c9dc37aa108aff71f2d39c43f1e8b801bcda7ba6cab318f0cb"},
+    {file = "imagecodecs-2022.2.22-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:288138cda96524b652db8b4592d8907b68162fc14ba6f37f5b7a36c797d82a45"},
+    {file = "imagecodecs-2022.2.22-cp38-cp38-win32.whl", hash = "sha256:7247fbdb94c93aa36e9360fae7bf9af9518e27868778203a13772711a62b4f8f"},
+    {file = "imagecodecs-2022.2.22-cp38-cp38-win_amd64.whl", hash = "sha256:34d058ad1cd444d36a0a7e426b9fd5b22a0875ea1a1252f0db7c4a170315d191"},
+    {file = "imagecodecs-2022.2.22-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:68c3bef82ba6a6496b9e1118832c95e9ba72264fee0e7c852536ed76430d9da5"},
+    {file = "imagecodecs-2022.2.22-cp39-cp39-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:87878ae9fe73214735b05fc99ea3d878ef7fee0dff890fa0f94c40973d2ff15d"},
+    {file = "imagecodecs-2022.2.22-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f548073f5d6f45fac62549c4c683adede847fca54492965dd4fcffc55ac6ffc0"},
+    {file = "imagecodecs-2022.2.22-cp39-cp39-win32.whl", hash = "sha256:d76853451f57aa4c2376853272ce07903fd60562c895e207ddbfa8fc7cde3d1d"},
+    {file = "imagecodecs-2022.2.22-cp39-cp39-win_amd64.whl", hash = "sha256:30179978120ae1bb27721d13698fda965b7bf0fc2344f8a939e51491c3c74455"},
+    {file = "imagecodecs-2022.2.22-pp38-pypy38_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:35284f3573da2449ecdf26b7d7e245f973dc29abed45c1d4213917655b633b89"},
+    {file = "imagecodecs-2022.2.22-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:25bf46b7acd2aba5fbfbefe52568f14d1466aa71e9134221e694d01f52e805a9"},
+    {file = "imagecodecs-2022.2.22.tar.gz", hash = "sha256:062bef6b003290a8163abed2744b406854238208dfdd41cf7165253c6e01c0bd"},
+]
 iniconfig = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
     {file = "iniconfig-1.1.1.tar.gz", hash = "sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32"},
@@ -1126,6 +1167,28 @@ mypy-extensions = [
 nodeenv = [
     {file = "nodeenv-1.6.0-py2.py3-none-any.whl", hash = "sha256:621e6b7076565ddcacd2db0294c0381e01fd28945ab36bcf00f41c5daf63bef7"},
     {file = "nodeenv-1.6.0.tar.gz", hash = "sha256:3ef13ff90291ba2a4a7a4ff9a979b63ffdd00a464dbe04acf0ea6471517a4c2b"},
+]
+numpy = [
+    {file = "numpy-1.22.3-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:92bfa69cfbdf7dfc3040978ad09a48091143cffb778ec3b03fa170c494118d75"},
+    {file = "numpy-1.22.3-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:8251ed96f38b47b4295b1ae51631de7ffa8260b5b087808ef09a39a9d66c97ab"},
+    {file = "numpy-1.22.3-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:48a3aecd3b997bf452a2dedb11f4e79bc5bfd21a1d4cc760e703c31d57c84b3e"},
+    {file = "numpy-1.22.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a3bae1a2ed00e90b3ba5f7bd0a7c7999b55d609e0c54ceb2b076a25e345fa9f4"},
+    {file = "numpy-1.22.3-cp310-cp310-win32.whl", hash = "sha256:f950f8845b480cffe522913d35567e29dd381b0dc7e4ce6a4a9f9156417d2430"},
+    {file = "numpy-1.22.3-cp310-cp310-win_amd64.whl", hash = "sha256:08d9b008d0156c70dc392bb3ab3abb6e7a711383c3247b410b39962263576cd4"},
+    {file = "numpy-1.22.3-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:201b4d0552831f7250a08d3b38de0d989d6f6e4658b709a02a73c524ccc6ffce"},
+    {file = "numpy-1.22.3-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:f8c1f39caad2c896bc0018f699882b345b2a63708008be29b1f355ebf6f933fe"},
+    {file = "numpy-1.22.3-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:568dfd16224abddafb1cbcce2ff14f522abe037268514dd7e42c6776a1c3f8e5"},
+    {file = "numpy-1.22.3-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3ca688e1b9b95d80250bca34b11a05e389b1420d00e87a0d12dc45f131f704a1"},
+    {file = "numpy-1.22.3-cp38-cp38-win32.whl", hash = "sha256:e7927a589df200c5e23c57970bafbd0cd322459aa7b1ff73b7c2e84d6e3eae62"},
+    {file = "numpy-1.22.3-cp38-cp38-win_amd64.whl", hash = "sha256:07a8c89a04997625236c5ecb7afe35a02af3896c8aa01890a849913a2309c676"},
+    {file = "numpy-1.22.3-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:2c10a93606e0b4b95c9b04b77dc349b398fdfbda382d2a39ba5a822f669a0123"},
+    {file = "numpy-1.22.3-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:fade0d4f4d292b6f39951b6836d7a3c7ef5b2347f3c420cd9820a1d90d794802"},
+    {file = "numpy-1.22.3-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5bfb1bb598e8229c2d5d48db1860bcf4311337864ea3efdbe1171fb0c5da515d"},
+    {file = "numpy-1.22.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:97098b95aa4e418529099c26558eeb8486e66bd1e53a6b606d684d0c3616b168"},
+    {file = "numpy-1.22.3-cp39-cp39-win32.whl", hash = "sha256:fdf3c08bce27132395d3c3ba1503cac12e17282358cb4bddc25cc46b0aca07aa"},
+    {file = "numpy-1.22.3-cp39-cp39-win_amd64.whl", hash = "sha256:639b54cdf6aa4f82fe37ebf70401bbb74b8508fddcf4797f9fe59615b8c5813a"},
+    {file = "numpy-1.22.3-pp38-pypy38_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c34ea7e9d13a70bf2ab64a2532fe149a9aced424cd05a2c4ba662fd989e3e45f"},
+    {file = "numpy-1.22.3.zip", hash = "sha256:dbc7601a3b7472d559dc7b933b18b4b66f9aa7452c120e87dfb33d02008c8a18"},
 ]
 packaging = [
     {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},
