@@ -1,7 +1,13 @@
 from typing import Any, Callable, Dict
 
 import numpy as np
-from imagecodecs import delta_decode, jpeg_decode, lzw_decode, zlib_decode
+from imagecodecs import (
+    delta_decode,
+    jpeg_decode,
+    lzw_decode,
+    packbits_decode,
+    zlib_decode,
+)
 
 from async_cog.ifd import IFD
 
@@ -33,6 +39,11 @@ def decode_deflate(ifd: IFD, data: bytes) -> np.ndarray:
     return array
 
 
+def decode_packbits(ifd: IFD, data: bytes) -> np.ndarray:
+    raw_data = packbits_decode(data)
+    return np.frombuffer(raw_data, dtype=ifd.numpy_dtype).reshape(*ifd.numpy_shape)
+
+
 def decode_jpeg(ifd: IFD, data: bytes) -> np.ndarray:
     jpeg_table = ifd["JPEGTables"]
 
@@ -50,4 +61,5 @@ DECODERS_MAPPING: Dict[int, Decoder] = {
     6: decode_jpeg,
     7: decode_jpeg,
     8: decode_deflate,
+    32773: decode_packbits,
 }
