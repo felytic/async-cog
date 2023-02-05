@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "async-cog"
-version = "0.2.1"
+version = "0.3.0"
 description = "Async library for Cloud-Optimised GeoTIFF"
 authors = ["Serhii Hulko <3834080+felytic@users.noreply.github.com>"]
 license = "MIT"
@@ -9,6 +9,7 @@ license = "MIT"
 python = "^3.8"
 aiohttp = "^3.8.0"
 pydantic = "^1.8.2"
+imagecodecs = "^2022.2.22"
 
 [tool.poetry.dev-dependencies]
 aioresponses = "^0.7.2"
