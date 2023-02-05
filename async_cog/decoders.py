@@ -1,9 +1,14 @@
 from typing import Any, Callable, Dict
 
 import numpy as np
-from imagecodecs import delta_decode, jpeg_decode, lzw_decode
+from imagecodecs import delta_decode, jpeg_decode, lzw_decode, zlib_decode
 
 from async_cog.ifd import IFD
+
+
+def _unpredict(ifd: IFD, array: np.ndarray) -> None:
+    if ifd.get("Predictor") == 2:
+        delta_decode(array, out=array, axis=-1)
 
 
 def decode_raw(ifd: IFD, data: bytes) -> np.ndarray:
@@ -11,13 +16,19 @@ def decode_raw(ifd: IFD, data: bytes) -> np.ndarray:
 
 
 def decode_lzw(ifd: IFD, data: bytes) -> np.ndarray:
-    uncompressed_data = lzw_decode(data)
-    array = np.frombuffer(uncompressed_data, dtype=ifd.numpy_dtype).reshape(
-        *ifd.numpy_shape
-    )
+    raw_data = lzw_decode(data)
+    array = np.frombuffer(raw_data, dtype=ifd.numpy_dtype).reshape(*ifd.numpy_shape)
 
-    if ifd.get("Predictor") == 2:
-        delta_decode(array, out=array, axis=-1)
+    _unpredict(ifd, array)
+
+    return array
+
+
+def decode_deflate(ifd: IFD, data: bytes) -> np.ndarray:
+    raw_data = zlib_decode(data)
+    array = np.frombuffer(raw_data, dtype=ifd.numpy_dtype).reshape(*ifd.numpy_shape)
+
+    _unpredict(ifd, array)
 
     return array
 
@@ -38,4 +49,5 @@ DECODERS_MAPPING: Dict[int, Decoder] = {
     5: decode_lzw,
     6: decode_jpeg,
     7: decode_jpeg,
+    8: decode_deflate,
 }

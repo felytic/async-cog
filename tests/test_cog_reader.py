@@ -334,3 +334,14 @@ async def test_read_tile_image_lzw(mocked_reader) -> None:
         assert all(image[100][100] == [116, 223, 48, 47])
         assert image.dtype == np.uint8
         assert image.shape == (256, 256, 4)
+
+
+@mark.asyncio
+async def test_read_tile_image_deflate(mocked_reader) -> None:
+    async with mocked_reader("deflate.tif") as reader:
+        image = await reader.get_tile_image(4, 0, 0)
+
+        assert isinstance(image, np.ndarray)
+        assert all(image[0][0] == [255, 2, 5])
+        assert image.dtype == np.uint8
+        assert image.shape == (256, 256, 3)
