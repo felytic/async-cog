@@ -1,6 +1,7 @@
 from math import ceil
 from typing import Any, Dict, Union
 
+import numpy as np
 from pydantic import BaseModel, NonNegativeInt
 
 from async_cog.geokeys import GeoKey
@@ -74,6 +75,25 @@ class IFD(BaseModel):
         tile_data_exist = len(tile_offsets) > idx and len(tile_byte_counts) > idx
 
         return tile_exist and tile_data_exist
+
+    @property
+    def numpy_shape(self) -> tuple:
+        n_bands = self.get("SamplesPerPixel")
+        width = self.get("TileWidth")
+        height = self.get("TileHeight")
+
+        return width, height, n_bands
+
+    @property
+    def numpy_dtype(self) -> np.dtype:
+        sample_format = self["SampleFormat"][0]
+        bits_per_sample = self["BitsPerSample"][0]
+
+        FORMAT_MAPPING = {1: "uint", 2: "int", 3: "float"}
+
+        type_str = FORMAT_MAPPING.get(sample_format, "uint")
+
+        return np.dtype(f"{type_str}{bits_per_sample}")
 
     def parse_geokeys(self) -> None:
         """

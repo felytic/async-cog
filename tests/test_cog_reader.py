@@ -298,7 +298,7 @@ async def test_ifd_iter(mocked_reader) -> None:
 async def test_read_tile_image_raises(mocked_reader) -> None:
     async with mocked_reader("cog.tif") as reader:
         with raises(
-                ValueError, match=escape("Tile (0, 0) on the level 5 doesn't exist")
+            ValueError, match=escape("Tile (0, 0) on the level 5 doesn't exist")
         ):
             await reader.get_tile_image(5, 0, 0)
 
@@ -323,3 +323,14 @@ async def test_read_tile_image_jpeg(mocked_reader) -> None:
         assert all(image[0][0] == [255, 0, 0])
         assert image.dtype == np.uint8
         assert image.shape == (256, 256, 3)
+
+
+@mark.asyncio
+async def test_read_tile_image_lzw(mocked_reader) -> None:
+    async with mocked_reader("lzw.tif") as reader:
+        image = await reader.get_tile_image(4, 0, 0)
+
+        assert isinstance(image, np.ndarray)
+        assert all(image[100][100] == [116, 223, 48, 47])
+        assert image.dtype == np.uint8
+        assert image.shape == (256, 256, 4)

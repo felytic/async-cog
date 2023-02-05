@@ -1,24 +1,25 @@
 from typing import Any, Callable, Dict
 
 import numpy as np
-from imagecodecs import jpeg_decode
+from imagecodecs import delta_decode, jpeg_decode, lzw_decode
 
 from async_cog.ifd import IFD
 
 
 def decode_raw(ifd: IFD, data: bytes) -> np.ndarray:
-    bits_per_sample = ifd["BitsPerSample"]
-    width = ifd["TileWidth"]
-    height = ifd["TileHeight"]
+    return np.frombuffer(data, dtype=ifd.numpy_dtype).reshape(*ifd.numpy_shape)
 
-    shape = (width, height, len(bits_per_sample))
 
-    bytes_per_samples = bits_per_sample[0] // 8
+def decode_lzw(ifd: IFD, data: bytes) -> np.ndarray:
+    uncompressed_data = lzw_decode(data)
+    array = np.frombuffer(uncompressed_data, dtype=ifd.numpy_dtype).reshape(
+        *ifd.numpy_shape
+    )
 
-    # E.g 8 bits per sample will be "u1"
-    dtype = np.dtype(f"u{bytes_per_samples}")
+    if ifd.get("Predictor") == 2:
+        delta_decode(array, out=array, axis=-1)
 
-    return np.frombuffer(data, dtype=dtype).reshape(*shape)
+    return array
 
 
 def decode_jpeg(ifd: IFD, data: bytes) -> np.ndarray:
@@ -34,6 +35,7 @@ Decoder = Callable[[IFD, bytes], Any]
 
 DECODERS_MAPPING: Dict[int, Decoder] = {
     1: decode_raw,
+    5: decode_lzw,
     6: decode_jpeg,
     7: decode_jpeg,
 }
